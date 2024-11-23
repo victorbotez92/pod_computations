@@ -1,5 +1,0 @@
-BE CAREFUL BECAUSE THE INTRODUCTION OF SHIFT ANGLES IS INCOMPATIBLE WITH DIRECTORIES WHOSE NAMES CONTAIN DOTS
-
-next improvements to implement : -add restart files if too many snapshots
-                                 -parallelize on dimension D and on meridian sections S
-                                 -add centro-symmetry

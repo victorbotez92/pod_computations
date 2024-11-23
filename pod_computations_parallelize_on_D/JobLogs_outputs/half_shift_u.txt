@@ -1,7 +1,0 @@
-
-Initialization done successfully
-The data will be gathered as follows:
-[['tfin_0/binaries_out/u/', 'tfin_1/binaries_out/u/', 'tfin_2/binaries_out/u/'], ['tfin_3/binaries_out/u/', 'tfin_4/binaries_out/u/', 'tfin_5/binaries_out/u/'], ['tfin_6/binaries_out/u/', 'tfin_7/binaries_out/u/'], ['restart_template/rep_all_0/binaries_out/u/'], ['restart_template/rep_all_1/binaries_out/u/'], ['tfin_0/binaries_out/u/.shifted_0', 'tfin_1/binaries_out/u/.shifted_0', 'tfin_2/binaries_out/u/.shifted_0'], ['tfin_3/binaries_out/u/.shifted_0', 'tfin_4/binaries_out/u/.shifted_0', 'tfin_5/binaries_out/u/.shifted_0'], ['tfin_6/binaries_out/u/.shifted_0', 'tfin_7/binaries_out/u/.shifted_0'], ['restart_template/rep_all_0/binaries_out/u/.shifted_0'], ['restart_template/rep_all_1/binaries_out/u/.shifted_0']]
-=========================================================== BEGINNING MODES EXTRACTION
-entering Fourier loop 1/1
-=========================================================== FINISHED MODES EXTRACTION
