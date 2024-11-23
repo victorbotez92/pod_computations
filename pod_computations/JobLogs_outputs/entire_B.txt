@@ -1,0 +1,10 @@
+
+rank is 54 out of size 64
+rank is 17 out of size 64
+rank is 1 out of size 64
+rank is 42 out of size 64
+rank is 4 out of size 64
+rank is 36 out of size 64
+entering loop for mF = 29
+entering loop for mF = 30
+entering loop for mF = 52

@@ -1,0 +1,166 @@
+
+entering the code
+The data will be gathered as follows:
+[['tfin_0/binaries_out/H/', 'tfin_1/binaries_out/H/', 'tfin_2/binaries_out/H/'], ['tfin_3/binaries_out/H/', 'tfin_4/binaries_out/H/', 'tfin_5/binaries_out/H/'], ['tfin_6/binaries_out/H/', 'tfin_7/binaries_out/H/'], ['restart_template/rep_all_0/binaries_out/H/', 'restart_template/rep_all_1/binaries_out/H/'], ['tfin_0/binaries_out/H/.shifted_0', 'tfin_1/binaries_out/H/.shifted_0', 'tfin_2/binaries_out/H/.shifted_0'], ['tfin_3/binaries_out/H/.shifted_0', 'tfin_4/binaries_out/H/.shifted_0', 'tfin_5/binaries_out/H/.shifted_0'], ['tfin_6/binaries_out/H/.shifted_0', 'tfin_7/binaries_out/H/.shifted_0'], ['restart_template/rep_all_0/binaries_out/H/.shifted_0', 'restart_template/rep_all_1/binaries_out/H/.shifted_0'], ['tfin_0/binaries_out/H/.shifted_1', 'tfin_1/binaries_out/H/.shifted_1', 'tfin_2/binaries_out/H/.shifted_1'], ['tfin_3/binaries_out/H/.shifted_1', 'tfin_4/binaries_out/H/.shifted_1', 'tfin_5/binaries_out/H/.shifted_1'], ['tfin_6/binaries_out/H/.shifted_1', 'tfin_7/binaries_out/H/.shifted_1'], ['restart_template/rep_all_0/binaries_out/H/.shifted_1', 'restart_template/rep_all_1/binaries_out/H/.shifted_1'], ['tfin_0/binaries_out/H/.shifted_2', 'tfin_1/binaries_out/H/.shifted_2', 'tfin_2/binaries_out/H/.shifted_2'], ['tfin_3/binaries_out/H/.shifted_2', 'tfin_4/binaries_out/H/.shifted_2', 'tfin_5/binaries_out/H/.shifted_2'], ['tfin_6/binaries_out/H/.shifted_2', 'tfin_7/binaries_out/H/.shifted_2'], ['restart_template/rep_all_0/binaries_out/H/.shifted_2', 'restart_template/rep_all_1/binaries_out/H/.shifted_2']]
+entering loop 1/1
+doing axis c
+In POD on Fourier => Import of ['tfin_0/binaries_out/H/', 'tfin_1/binaries_out/H/', 'tfin_2/binaries_out/H/'] completed for mF=0
+In POD on Fourier => Import of ['tfin_3/binaries_out/H/', 'tfin_4/binaries_out/H/', 'tfin_5/binaries_out/H/'] completed for mF=0
+In POD on Fourier => Import of ['tfin_6/binaries_out/H/', 'tfin_7/binaries_out/H/'] completed for mF=0
+In POD on Fourier => Import of ['restart_template/rep_all_0/binaries_out/H/', 'restart_template/rep_all_1/binaries_out/H/'] completed for mF=0
+In POD on Fourier => Import of ['tfin_0/binaries_out/H/.shifted_0', 'tfin_1/binaries_out/H/.shifted_0', 'tfin_2/binaries_out/H/.shifted_0'] completed for mF=0
+In POD on Fourier => Import of ['tfin_3/binaries_out/H/.shifted_0', 'tfin_4/binaries_out/H/.shifted_0', 'tfin_5/binaries_out/H/.shifted_0'] completed for mF=0
+In POD on Fourier => Import of ['tfin_6/binaries_out/H/.shifted_0', 'tfin_7/binaries_out/H/.shifted_0'] completed for mF=0
+In POD on Fourier => Import of ['restart_template/rep_all_0/binaries_out/H/.shifted_0', 'restart_template/rep_all_1/binaries_out/H/.shifted_0'] completed for mF=0
+In POD on Fourier => Import of ['tfin_0/binaries_out/H/.shifted_1', 'tfin_1/binaries_out/H/.shifted_1', 'tfin_2/binaries_out/H/.shifted_1'] completed for mF=0
+In POD on Fourier => Import of ['tfin_3/binaries_out/H/.shifted_1', 'tfin_4/binaries_out/H/.shifted_1', 'tfin_5/binaries_out/H/.shifted_1'] completed for mF=0
+In POD on Fourier => Import of ['tfin_6/binaries_out/H/.shifted_1', 'tfin_7/binaries_out/H/.shifted_1'] completed for mF=0
+In POD on Fourier => Import of ['restart_template/rep_all_0/binaries_out/H/.shifted_1', 'restart_template/rep_all_1/binaries_out/H/.shifted_1'] completed for mF=0
+In POD on Fourier => Import of ['tfin_0/binaries_out/H/.shifted_2', 'tfin_1/binaries_out/H/.shifted_2', 'tfin_2/binaries_out/H/.shifted_2'] completed for mF=0
+In POD on Fourier => Import of ['tfin_3/binaries_out/H/.shifted_2', 'tfin_4/binaries_out/H/.shifted_2', 'tfin_5/binaries_out/H/.shifted_2'] completed for mF=0
+In POD on Fourier => Import of ['tfin_6/binaries_out/H/.shifted_2', 'tfin_7/binaries_out/H/.shifted_2'] completed for mF=0
+In POD on Fourier => Import of ['restart_template/rep_all_0/binaries_out/H/.shifted_2', 'restart_template/rep_all_1/binaries_out/H/.shifted_2'] completed for mF=0
+doing axis s
+In POD on Fourier => Import of ['tfin_0/binaries_out/H/', 'tfin_1/binaries_out/H/', 'tfin_2/binaries_out/H/'] completed for mF=0
+In POD on Fourier => Import of ['tfin_3/binaries_out/H/', 'tfin_4/binaries_out/H/', 'tfin_5/binaries_out/H/'] completed for mF=0
+In POD on Fourier => Import of ['tfin_6/binaries_out/H/', 'tfin_7/binaries_out/H/'] completed for mF=0
+In POD on Fourier => Import of ['restart_template/rep_all_0/binaries_out/H/', 'restart_template/rep_all_1/binaries_out/H/'] completed for mF=0
+In POD on Fourier => Import of ['tfin_0/binaries_out/H/.shifted_0', 'tfin_1/binaries_out/H/.shifted_0', 'tfin_2/binaries_out/H/.shifted_0'] completed for mF=0
+In POD on Fourier => Import of ['tfin_3/binaries_out/H/.shifted_0', 'tfin_4/binaries_out/H/.shifted_0', 'tfin_5/binaries_out/H/.shifted_0'] completed for mF=0
+In POD on Fourier => Import of ['tfin_6/binaries_out/H/.shifted_0', 'tfin_7/binaries_out/H/.shifted_0'] completed for mF=0
+In POD on Fourier => Import of ['restart_template/rep_all_0/binaries_out/H/.shifted_0', 'restart_template/rep_all_1/binaries_out/H/.shifted_0'] completed for mF=0
+In POD on Fourier => Import of ['tfin_0/binaries_out/H/.shifted_1', 'tfin_1/binaries_out/H/.shifted_1', 'tfin_2/binaries_out/H/.shifted_1'] completed for mF=0
+In POD on Fourier => Import of ['tfin_3/binaries_out/H/.shifted_1', 'tfin_4/binaries_out/H/.shifted_1', 'tfin_5/binaries_out/H/.shifted_1'] completed for mF=0
+In POD on Fourier => Import of ['tfin_6/binaries_out/H/.shifted_1', 'tfin_7/binaries_out/H/.shifted_1'] completed for mF=0
+In POD on Fourier => Import of ['restart_template/rep_all_0/binaries_out/H/.shifted_1', 'restart_template/rep_all_1/binaries_out/H/.shifted_1'] completed for mF=0
+In POD on Fourier => Import of ['tfin_0/binaries_out/H/.shifted_2', 'tfin_1/binaries_out/H/.shifted_2', 'tfin_2/binaries_out/H/.shifted_2'] completed for mF=0
+In POD on Fourier => Import of ['tfin_3/binaries_out/H/.shifted_2', 'tfin_4/binaries_out/H/.shifted_2', 'tfin_5/binaries_out/H/.shifted_2'] completed for mF=0
+In POD on Fourier => Import of ['tfin_6/binaries_out/H/.shifted_2', 'tfin_7/binaries_out/H/.shifted_2'] completed for mF=0
+In POD on Fourier => Import of ['restart_template/rep_all_0/binaries_out/H/.shifted_2', 'restart_template/rep_all_1/binaries_out/H/.shifted_2'] completed for mF=0
+trying to receive correlations from rank = 1 for phys POD
+just added data from rank 1 for phys POD
+trying to receive correlations from rank = 2 for phys POD
+just added data from rank 2 for phys POD
+trying to receive correlations from rank = 3 for phys POD
+just added data from rank 3 for phys POD
+trying to receive correlations from rank = 4 for phys POD
+just added data from rank 4 for phys POD
+trying to receive correlations from rank = 5 for phys POD
+just added data from rank 5 for phys POD
+trying to receive correlations from rank = 6 for phys POD
+just added data from rank 6 for phys POD
+trying to receive correlations from rank = 7 for phys POD
+just added data from rank 7 for phys POD
+trying to receive correlations from rank = 8 for phys POD
+just added data from rank 8 for phys POD
+trying to receive correlations from rank = 9 for phys POD
+just added data from rank 9 for phys POD
+trying to receive correlations from rank = 10 for phys POD
+just added data from rank 10 for phys POD
+trying to receive correlations from rank = 11 for phys POD
+just added data from rank 11 for phys POD
+trying to receive correlations from rank = 12 for phys POD
+just added data from rank 12 for phys POD
+trying to receive correlations from rank = 13 for phys POD
+just added data from rank 13 for phys POD
+trying to receive correlations from rank = 14 for phys POD
+just added data from rank 14 for phys POD
+trying to receive correlations from rank = 15 for phys POD
+just added data from rank 15 for phys POD
+trying to receive correlations from rank = 16 for phys POD
+just added data from rank 16 for phys POD
+trying to receive correlations from rank = 17 for phys POD
+just added data from rank 17 for phys POD
+trying to receive correlations from rank = 18 for phys POD
+just added data from rank 18 for phys POD
+trying to receive correlations from rank = 19 for phys POD
+just added data from rank 19 for phys POD
+trying to receive correlations from rank = 20 for phys POD
+just added data from rank 20 for phys POD
+trying to receive correlations from rank = 21 for phys POD
+just added data from rank 21 for phys POD
+trying to receive correlations from rank = 22 for phys POD
+just added data from rank 22 for phys POD
+trying to receive correlations from rank = 23 for phys POD
+just added data from rank 23 for phys POD
+trying to receive correlations from rank = 24 for phys POD
+just added data from rank 24 for phys POD
+trying to receive correlations from rank = 25 for phys POD
+just added data from rank 25 for phys POD
+trying to receive correlations from rank = 26 for phys POD
+just added data from rank 26 for phys POD
+trying to receive correlations from rank = 27 for phys POD
+just added data from rank 27 for phys POD
+trying to receive correlations from rank = 28 for phys POD
+just added data from rank 28 for phys POD
+trying to receive correlations from rank = 29 for phys POD
+just added data from rank 29 for phys POD
+trying to receive correlations from rank = 30 for phys POD
+just added data from rank 30 for phys POD
+trying to receive correlations from rank = 31 for phys POD
+just added data from rank 31 for phys POD
+trying to receive correlations from rank = 32 for phys POD
+just added data from rank 32 for phys POD
+trying to receive correlations from rank = 33 for phys POD
+just added data from rank 33 for phys POD
+trying to receive correlations from rank = 34 for phys POD
+just added data from rank 34 for phys POD
+trying to receive correlations from rank = 35 for phys POD
+just added data from rank 35 for phys POD
+trying to receive correlations from rank = 36 for phys POD
+just added data from rank 36 for phys POD
+trying to receive correlations from rank = 37 for phys POD
+just added data from rank 37 for phys POD
+trying to receive correlations from rank = 38 for phys POD
+just added data from rank 38 for phys POD
+trying to receive correlations from rank = 39 for phys POD
+just added data from rank 39 for phys POD
+trying to receive correlations from rank = 40 for phys POD
+just added data from rank 40 for phys POD
+trying to receive correlations from rank = 41 for phys POD
+just added data from rank 41 for phys POD
+trying to receive correlations from rank = 42 for phys POD
+just added data from rank 42 for phys POD
+trying to receive correlations from rank = 43 for phys POD
+just added data from rank 43 for phys POD
+trying to receive correlations from rank = 44 for phys POD
+just added data from rank 44 for phys POD
+trying to receive correlations from rank = 45 for phys POD
+just added data from rank 45 for phys POD
+trying to receive correlations from rank = 46 for phys POD
+just added data from rank 46 for phys POD
+trying to receive correlations from rank = 47 for phys POD
+just added data from rank 47 for phys POD
+trying to receive correlations from rank = 48 for phys POD
+just added data from rank 48 for phys POD
+trying to receive correlations from rank = 49 for phys POD
+just added data from rank 49 for phys POD
+trying to receive correlations from rank = 50 for phys POD
+just added data from rank 50 for phys POD
+trying to receive correlations from rank = 51 for phys POD
+just added data from rank 51 for phys POD
+trying to receive correlations from rank = 52 for phys POD
+just added data from rank 52 for phys POD
+trying to receive correlations from rank = 53 for phys POD
+just added data from rank 53 for phys POD
+trying to receive correlations from rank = 54 for phys POD
+just added data from rank 54 for phys POD
+trying to receive correlations from rank = 55 for phys POD
+just added data from rank 55 for phys POD
+trying to receive correlations from rank = 56 for phys POD
+just added data from rank 56 for phys POD
+trying to receive correlations from rank = 57 for phys POD
+just added data from rank 57 for phys POD
+trying to receive correlations from rank = 58 for phys POD
+just added data from rank 58 for phys POD
+trying to receive correlations from rank = 59 for phys POD
+just added data from rank 59 for phys POD
+trying to receive correlations from rank = 60 for phys POD
+just added data from rank 60 for phys POD
+trying to receive correlations from rank = 61 for phys POD
+just added data from rank 61 for phys POD
+trying to receive correlations from rank = 62 for phys POD
+just added data from rank 62 for phys POD
+trying to receive correlations from rank = 63 for phys POD
+just added data from rank 63 for phys POD
+succesfully saved spectra for symetrized suites (phys POD)

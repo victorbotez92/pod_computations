@@ -1,0 +1,69 @@
+
+Initialization done successfully
+The data will be gathered as follows:
+[['/tfin_0/binaries_out/H/', '/tfin_1/binaries_out/H/', '/tfin_2/binaries_out/H/'], ['/tfin_3/binaries_out/H/', '/tfin_4/binaries_out/H/', '/tfin_5/binaries_out/H/'], ['/tfin_6/binaries_out/H/', '/tfin_7/binaries_out/H/'], ['/tfin_0/binaries_out/H/.shifted_0', '/tfin_1/binaries_out/H/.shifted_0', '/tfin_2/binaries_out/H/.shifted_0'], ['/tfin_3/binaries_out/H/.shifted_0', '/tfin_4/binaries_out/H/.shifted_0', '/tfin_5/binaries_out/H/.shifted_0'], ['/tfin_6/binaries_out/H/.shifted_0', '/tfin_7/binaries_out/H/.shifted_0']]
+=========================================================== BEGINNING RENORMALIZATION
+entering Fourier loop 1/1
+Successfully imported ['/tfin_0/binaries_out/H/']
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+entering Fourier loop 1/1
+Successfully imported ['/tfin_1/binaries_out/H/']
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+entering Fourier loop 1/1
+Successfully imported ['/tfin_2/binaries_out/H/']
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+entering Fourier loop 1/1
+Successfully imported ['/tfin_3/binaries_out/H/']
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+entering Fourier loop 1/1
+Successfully imported ['/tfin_4/binaries_out/H/']
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+entering Fourier loop 1/1
+Successfully imported ['/tfin_5/binaries_out/H/']
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+entering Fourier loop 1/1
+Successfully imported ['/tfin_6/binaries_out/H/']
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+entering Fourier loop 1/1
+Successfully imported ['/tfin_7/binaries_out/H/']
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+=========================================================== FINISHED RENORMALIZATION
+=========================================================== BEGINNING LATENTS EXTRACTION
+entering Fourier loop 1/1
+doing axis c
+      In POD on Fourier => ['/tfin_0/binaries_out/H/', '/tfin_1/binaries_out/H/', '/tfin_2/binaries_out/H/'] imported as left matrix
+          In POD on Fourier => ['/tfin_3/binaries_out/H/', '/tfin_4/binaries_out/H/', '/tfin_5/binaries_out/H/'] imported as right matrix
+          In POD on Fourier => ['/tfin_6/binaries_out/H/', '/tfin_7/binaries_out/H/'] imported as right matrix
+          In POD on Fourier => ['/tfin_0/binaries_out/H/.shifted_0', '/tfin_1/binaries_out/H/.shifted_0', '/tfin_2/binaries_out/H/.shifted_0'] imported as right matrix
+          In POD on Fourier => ['/tfin_3/binaries_out/H/.shifted_0', '/tfin_4/binaries_out/H/.shifted_0', '/tfin_5/binaries_out/H/.shifted_0'] imported as right matrix
+          In POD on Fourier => ['/tfin_6/binaries_out/H/.shifted_0', '/tfin_7/binaries_out/H/.shifted_0'] imported as right matrix
+      In POD on Fourier => ['/tfin_3/binaries_out/H/', '/tfin_4/binaries_out/H/', '/tfin_5/binaries_out/H/'] imported as left matrix
+          In POD on Fourier => ['/tfin_6/binaries_out/H/', '/tfin_7/binaries_out/H/'] imported as right matrix
+          In POD on Fourier => ['/tfin_0/binaries_out/H/.shifted_0', '/tfin_1/binaries_out/H/.shifted_0', '/tfin_2/binaries_out/H/.shifted_0'] imported as right matrix
+          In POD on Fourier => ['/tfin_3/binaries_out/H/.shifted_0', '/tfin_4/binaries_out/H/.shifted_0', '/tfin_5/binaries_out/H/.shifted_0'] imported as right matrix
+          In POD on Fourier => ['/tfin_6/binaries_out/H/.shifted_0', '/tfin_7/binaries_out/H/.shifted_0'] imported as right matrix
+      In POD on Fourier => ['/tfin_6/binaries_out/H/', '/tfin_7/binaries_out/H/'] imported as left matrix
+          In POD on Fourier => ['/tfin_0/binaries_out/H/.shifted_0', '/tfin_1/binaries_out/H/.shifted_0', '/tfin_2/binaries_out/H/.shifted_0'] imported as right matrix
+          In POD on Fourier => ['/tfin_3/binaries_out/H/.shifted_0', '/tfin_4/binaries_out/H/.shifted_0', '/tfin_5/binaries_out/H/.shifted_0'] imported as right matrix
+          In POD on Fourier => ['/tfin_6/binaries_out/H/.shifted_0', '/tfin_7/binaries_out/H/.shifted_0'] imported as right matrix
+      In POD on Fourier => ['/tfin_0/binaries_out/H/.shifted_0', '/tfin_1/binaries_out/H/.shifted_0', '/tfin_2/binaries_out/H/.shifted_0'] imported as left matrix
+          In POD on Fourier => ['/tfin_3/binaries_out/H/.shifted_0', '/tfin_4/binaries_out/H/.shifted_0', '/tfin_5/binaries_out/H/.shifted_0'] imported as right matrix
+          In POD on Fourier => ['/tfin_6/binaries_out/H/.shifted_0', '/tfin_7/binaries_out/H/.shifted_0'] imported as right matrix
+      In POD on Fourier => ['/tfin_3/binaries_out/H/.shifted_0', '/tfin_4/binaries_out/H/.shifted_0', '/tfin_5/binaries_out/H/.shifted_0'] imported as left matrix
+          In POD on Fourier => ['/tfin_6/binaries_out/H/.shifted_0', '/tfin_7/binaries_out/H/.shifted_0'] imported as right matrix
+      In POD on Fourier => ['/tfin_6/binaries_out/H/.shifted_0', '/tfin_7/binaries_out/H/.shifted_0'] imported as left matrix
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+succesfully saved spectra for symetrized suites (phys POD)
+=========================================================== FINISHED LATENTS EXTRACTION
+=========================================================== BEGINNING MODES EXTRACTION
+entering Fourier loop 1/1
+=========================================================== FINISHED MODES EXTRACTION

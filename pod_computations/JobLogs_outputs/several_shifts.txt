@@ -1,0 +1,43 @@
+
+rank is 4 out of size 322
+rank is 13 out of size 32
+rank is 12 out of size 32
+rank is 17 out of size 32
+rank is 21 out of size 32
+rank is 14 out of size 32
+entering loop for mF = 23
+entering loop for mF = 4
+entering loop for mF = 3
+entering loop for mF = 12
+entering loop for mF = 32
+entering loop for mF = 44
+entering loop for mF = 59
+entering loop for mF = 56
+entering loop for mF = 53
+entering loop for mF = 50
+entering loop for mF = 42
+entering loop for mF = 33
+entering loop for mF = 45
+entering loop for mF = 43
+entering loop for mF = 55
+entering loop for mF = 52
+entering loop for mF = 34
+entering loop for mF = 54
+entering loop for mF = 36
+entering loop for mF = 63
+entering loop for mF = 57
+entering loop for mF = 48
+entering loop for mF = 40
+entering loop for mF = 46
+entering loop for mF = 35
+entering loop for mF = 51
+entering loop for mF = 47
+entering loop for mF = 37
+entering loop for mF = 41
+entering loop for mF = 58
+entering loop for mF = 39
+entering loop for mF = 62
+entering loop for mF = 49
+entering loop for mF = 61
+entering loop for mF = 38
+entering loop for mF = 60

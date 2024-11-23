@@ -1,0 +1,19 @@
+
+entering loop for mF = 1s 18 out of size 64
+rank is 13 out of size 64
+rank is 28 out of size 64
+rank is 23 out of size 64
+rank is 21 out of size 64
+rank is 24 out of size 64
+rank is 22 out of size 64
+rank is 8 out of size 64
+rank is 27 out of size 64
+rank is 26 out of size 64
+rank is 14 out of size 64
+rank is 3 out of size 64
+rank is 4 out of size 64
+rank is 1 out of size 64
+rank is 46 out of size 64
+entering loop for mF = 58
+entering loop for mF = 42
+entering loop for mF = 37
