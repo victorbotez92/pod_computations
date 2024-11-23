@@ -1,5 +1,0 @@
-+ date
-+ srun python -m memory_profiler /gpfs/users/botezv/pod_entirely_auto_tests/POD_on_fourier.py
-+ echo 'running pod'
-+ wait
-+ date

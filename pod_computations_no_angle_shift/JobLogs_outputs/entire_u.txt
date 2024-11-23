@@ -1,7 +1,0 @@
-
-rank is 54 out of size 64
-entering loop for mF = 0
-entering loop for mF = 31
-entering loop for mF = 53
-entering loop for mF = 38
-entering loop for mF = 20
