@@ -1,0 +1,10 @@
+ n_w : nombre de noeud par maille
+           6
+ l_G : nombre de point de gauss par maille
+           7
+ dom_me : nombre de maille dans domaine
+       11498
+ np : nombre de noeud dans le domaine
+       23177
+ ww has shape (n_w,l_G) 
+ jj has shape (n_w,dom_me) 

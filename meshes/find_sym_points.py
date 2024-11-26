@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 import os
 
 
-path_to_mesh = 'C:/Users/Utilisateur/OneDrive/Bureau/new_meshes'
-mesh_ext = '.mesh_005_02_2_ext3_sym.FEM'
+path_to_mesh = '/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/meshes/TM87'
+mesh_ext = '.embedded_VKS_0p04_0p01.FEM'#'.mesh_005_02_2_ext3_sym.FEM'
 mesh_type = 'vv'
-S = 3
+S = 2
 
 expo = -8
 
+plot_results = True
 
 R = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}rr_S{s:04d}"+mesh_ext) for s in range(S)]).reshape(-1)
 Z = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext) for s in range(S)]).reshape(-1)
@@ -137,13 +138,16 @@ while index < negative_index and z < 0:
    # print(index,len(list_pairs),index+last_negative_index,len(new_pairs)-len(list_negative_indexes))
 np.save(path_to_mesh+'/list_pairs_vv',np.array(list_pairs))
  #   assert (1+index)*2 == len(list_pairs)
-list_differences_R = []
-list_differences_Z = []
-for elm in list_pairs:
-    i,j = elm[0],elm[1]
-    list_differences_R.append(np.abs(R[i]-R[j]))
-    list_differences_Z.append(np.abs(Z[i] + Z[j]))
-plt.plot(np.arange(len(list_differences_R)),list_differences_R,label='R')
-plt.plot(np.arange(len(list_differences_Z)),list_differences_Z,label='Z')
-plt.legend()
-plt.show()
+
+if plot_results:
+    list_differences_R = []
+    list_differences_Z = []
+    for elm in list_pairs:
+        i,j = elm[0],elm[1]
+        list_differences_R.append(np.abs(R[i]-R[j]))
+        list_differences_Z.append(np.abs(Z[i] + Z[j]))
+    plt.plot(np.arange(len(list_differences_R)),list_differences_R,label='R')
+    plt.plot(np.arange(len(list_differences_Z)),list_differences_Z,label='Z')
+    plt.legend()
+    plt.title('if calculations went well, then all points should be orders of magnitudes below 0')
+    plt.show()
