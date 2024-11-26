@@ -44,19 +44,19 @@ def compute_correlation(matrix,give_weights=False,weights = [],with_itself = Tru
 
 def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_building_symmetrized_weights=(None,None,None,None)):
 
-    if par.should_we_add_mesh_symmetry:
-            rows,columns,WEIGHTS,WEIGHTS_with_symmetry = for_building_symmetrized_weights
-            weight_sym_on_right,weight_sym_on_left,weight_sym_on_right_and_left = build_symmetrized_weights(rows,columns,WEIGHTS,WEIGHTS_with_symmetry,
-                                                                                    D = par.D,axis=axis)
-    sparse_WEIGHTS = csr_matrix((WEIGHTS,(np.arange(len(WEIGHTS)),np.arange(len(WEIGHTS)))))
+    rows,columns,WEIGHTS,WEIGHTS_with_symmetry = for_building_symmetrized_weights
 
+    # if par.should_we_add_mesh_symmetry:
+
+    sparse_WEIGHTS = csr_matrix((WEIGHTS,(np.arange(len(WEIGHTS)),np.arange(len(WEIGHTS))))) # Building a sparse diagonal matrix (required for fct compute_correlation)
 
 
     nb_paths = len(par.paths_to_data)
     factor = 1
     if par.should_we_add_mesh_symmetry:
         factor *= 2
-    
+        weight_sym_on_right,weight_sym_on_left,weight_sym_on_right_and_left = build_symmetrized_weights(rows,columns,WEIGHTS,WEIGHTS_with_symmetry,
+        D = par.D,axis=axis)
     # No need because already taken into account in nb_paths (Cf path_to_data containing some ".shifted" in initialization.py)
     # if should_we_combine_with_shifted_data: 
     #     factor *= 2

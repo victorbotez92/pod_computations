@@ -155,8 +155,10 @@ assert rank == invert_rank(par.rank_fourier,par.rank_axis,par.rank_meridian,par)
 ########################################################################
 ########################################################################
 
+W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
+WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
+
 if should_we_add_mesh_symmetry:
-    W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
     # ADAPT WHEN USING SEVERAL PROCS IN MERIDIAN
     if D == 3:
         relative_signs = [1,-1,-1] #cf Rpi-symmetry for the three components
@@ -165,7 +167,6 @@ if should_we_add_mesh_symmetry:
         relative_signs = [1]
 
     WEIGHTS_with_symmetry = np.array([relative_signs[d]*W for d in range(D)]).reshape(-1)  
-    WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
     rows = []
     columns = []
     for elm in list_pairs:
@@ -180,7 +181,7 @@ if should_we_add_mesh_symmetry:
     for_building_symmetrized_weights = (rows,columns,WEIGHTS,WEIGHTS_with_symmetry)
 
 else:
-    for_building_symmetrized_weights = (None,None,None,None)
+    for_building_symmetrized_weights = (None,None,WEIGHTS,None)
 
 par.for_building_symmetrized_weights = for_building_symmetrized_weights
 

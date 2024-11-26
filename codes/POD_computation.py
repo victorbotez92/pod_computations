@@ -78,6 +78,8 @@ def save_pod(par,pod_field,is_it_phys_pod=True,mF=None,fourier_type=None): #matr
         np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys.npy',Energies)
 
 
+############ MESH SYMMETRY FUNCTIONS (not working because data too big to be handled by numpy, in practice it is always written explicitly)
+
 def apply_rpi_symmetry(data,D,axis,tab_pairs):
 
         newdata = rearrange(data,"t (d n) -> t d n",d=D)
