@@ -104,6 +104,7 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
             if par.should_we_add_mesh_symmetry == True:
 
                 list_blocs[i][j] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,with_itself = False,second_matrix = second_matrix.T)
+
                 list_blocs[i][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right,with_itself = False,second_matrix = second_matrix.T)
                 list_blocs[i+factor//2*nb_paths][j] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_left,with_itself = False,second_matrix = second_matrix.T)
                 list_blocs[i+factor//2*nb_paths][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right_and_left,with_itself = False,second_matrix = second_matrix.T)

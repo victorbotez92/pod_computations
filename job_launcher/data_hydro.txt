@@ -83,7 +83,7 @@ False
 #################################################
 
 ===should_we_add_mesh_symmetry=== # For now only working with Rpi-symmetry, not centro-symmetry
-False
+True
 
 ===should_we_combine_with_shifted_data=== # True or False
 False
@@ -131,7 +131,7 @@ False
 /test_PODs_out/
 
 ===output_file_name===
-/no_sym/
+/no_sym_bis/
 
 ===name_job_output===
 test_no_sym.txt
@@ -144,7 +144,7 @@ test_no_sym.txt
 #################################################
 
 ===should_we_extract_latents===
-False
+True
 
 ===should_we_save_phys_correlation===  # beware for this requires to compute the phys POD as well
 False
