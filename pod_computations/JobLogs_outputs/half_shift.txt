@@ -1,7 +1,0 @@
-
-entering loop for mF = 28
-entering loop for mF = 24
-entering loop for mF = 51
-entering loop for mF = 49
-entering loop for mF = 33
-entering loop for mF = 62
