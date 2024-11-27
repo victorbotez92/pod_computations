@@ -38,7 +38,7 @@ u
 2
 
 ===MF=== #number of Fourier modes
-64
+100
 
 ===should_we_save_Fourier_POD===
 True
@@ -53,7 +53,7 @@ True
 #################################################
 
 ===nb_proc_in_fourier=== # can use at most one proc for each mF
-64
+100
 
 ===nb_proc_in_axis=== # set to 2 if want to parallelize computations on sine and cosine
 2
@@ -83,7 +83,7 @@ False
 #################################################
 
 ===should_we_add_mesh_symmetry=== # For now only working with Rpi-symmetry, not centro-symmetry
-True
+False
 
 ===should_we_combine_with_shifted_data=== # True or False
 False
@@ -100,11 +100,17 @@ False
 #################################################
 #################################################
 
-===fourier_pod_modes_to_save===
-0,3
+===should_we_save_all_fourier_pod_modes=== #BEWARE OF MEMORY ISSUES
+True
 
-===phys_pod_modes_to_save===
-0,1,2
+===fourier_pod_modes_to_save=== #useless if param above set to True
+0,1,2,3,4,5,6
+
+===should_we_save_all_phys_pod_modes=== #BEWARE OF MEMORY ISSUES
+True
+
+===phys_pod_modes_to_save=== #useless if param above set to True
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
 
 ######################  Lists of different necessary paths (see ReadMe)
 #################################################
@@ -117,10 +123,10 @@ False
 /gpfs/workdir/botezv/MY_APPLICATIONS_SFEMaNS_GIT/LES_VKS_TM73/RUNS/Runs_SFeMANS/Re1500_Rm150_mu50/data_tgcc/lin/
 
 ===paths_to_data===
-200samples_Re10000/,200samples_Re29000/
+200samples_Re10000/
 
+,200samples_Re29000/
 /tfin_0/binaries_out/u/,/tfin_1/binaries_out/u/
-
 ,/tfin_2/binaries_out/u/
 /tfin_3/binaries_out/u/,/tfin_4/binaries_out/u/,/tfin_5/binaries_out/u/
 /tfin_6/binaries_out/u/,/tfin_7/binaries_out/u/
@@ -131,10 +137,10 @@ False
 /test_PODs_out/
 
 ===output_file_name===
-/no_sym_bis/
+/test_all_modes/
 
 ===name_job_output===
-test_no_sym.txt
+test_all_modes.txt
 
 
 ######################  Saving options
@@ -144,7 +150,7 @@ test_no_sym.txt
 #################################################
 
 ===should_we_extract_latents===
-True
+False
 
 ===should_we_save_phys_correlation===  # beware for this requires to compute the phys POD as well
 False

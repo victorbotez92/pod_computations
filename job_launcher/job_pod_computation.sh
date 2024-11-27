@@ -3,7 +3,7 @@
 #SBATCH -o ./JobLogs/%x.o
 #SBATCH -e ./JobLogs/%x.err
 #SBATCH --exclusive
-#SBATCH --ntasks=128
+#SBATCH --ntasks=200
 #SBATCH --partition=cpu_short
 #SBATCH --time=1:00:00
 

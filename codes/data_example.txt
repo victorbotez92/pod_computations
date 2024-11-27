@@ -57,13 +57,16 @@ True
 ===nb_proc_in_meridian=== # can parallelize on the number of subdomains NOT WORKING FOR NOW
 1
 
+===nb_proc_in_dimension=== # can parallelize on the number of dimensions NOT WORKING FOR NOW (and not efficient at all)
+1
+
 ###################### possibilities to renormalize (make sure to choose at most one)
 #################################################
 #################################################
 #################################################
 #################################################
 
-===is_the_field_to_be_renormalized_by_magnetic_energy=== # relevant in growth phase for transfer terms
+===is_the_field_to_be_renormalized_by_magnetic_energy=== # relevant in growth phase for transfer terms (not working)
 False
 
 ===is_the_field_to_be_renormalized_by_its_L2_norm=== # relevant in the growth phase
@@ -93,13 +96,19 @@ True
 #################################################
 #################################################
 
-===fourier_pod_modes_to_save===
+===should_we_save_all_fourier_pod_modes=== #BEWARE OF MEMORY ISSUES
+False
+
+===fourier_pod_modes_to_save=== #useless if param above set to True
 0,1,2,3,4,5,6
 
-===phys_pod_modes_to_save===
+===should_we_save_all_phys_pod_modes=== #BEWARE OF MEMORY ISSUES
+False
+
+===phys_pod_modes_to_save=== #useless if param above set to True
 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
 
-######################  Lists of different necessary paths (see ReadMe)
+######################  Lists of different necessary paths (see ReadMe for more details)
 #################################################
 #################################################
 #################################################

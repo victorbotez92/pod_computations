@@ -1,5 +1,59 @@
+The code needs to be run through a job and must be passed as argument the directory of the data file (see job_pod_computation)
+
+EXPLANATIONS ABOUT PARAMETERS:
+
+
+    GENERAL REMARKS:
+        -parameters must be written on the line right after ===my_parameter===
+        -anything written outside this situation (except for "paths_to_data" where it reads all successive lines and thus requires and empty line) is not considered
+
+
+
+    
+        -directory_codes: it is only used as output path for the .txt files
+        -nb_proc_in_meridian: does not work for now
+        -is_the_field_to_be_renormalized_by_magnetic_energy: (not working) this was initially added when planning to apply POD on the power terms Tub and Mmu
+                                                            Since this kind of POD would likely not give relevant results I dropped the idea to fix this parameters
+
+
+        -should_we_combine_with_shifted_data: set to True if wants to do data-augmentation with shifts
+        -shift_angle: all angles for which the data should be shifted. 
+            should be of the form -> 0.125,0.25,0.89,0.1 
+            and can contain as many angles as one wants BUT separations due to symmetry can be performed only if one adds all angles k*2pi/n (at most 7 new angles for VK)
 BE CAREFUL BECAUSE THE INTRODUCTION OF SHIFT ANGLES IS INCOMPATIBLE WITH DIRECTORIES WHOSE NAMES CONTAIN DOTS
 
+    SAVING POD MODES
+        -fourier_pod_modes_to_save: put a series of integers [nP] such that all POD modes within [nP] will be saved, for every mF lower than MF, for axis c and s
+        -phys_pod_modes_to_save: series of integers [nP] such that all POD modes within [nP] will be saved, for every mF lower than MF, for axis c and s
+    ABOUT PATHS
+        -path_to_suites: the top of directories
+        -paths_to_data: can contain individual paths to gather binaries from several directories
+            
+            ex: path_1,path_2
+                path_bis_1,path_bis_2,path_bis_3
+                path_ter
+
+                the code gathers the data from path_to_suites+path_1,path_to_suites+path_2 as if they were together
+                then it loops on the number of lines plugged in 'paths_to_data'
+
+                advantage of putting several paths on the same line: these data are imported together and therefore the code doesn't have to
+                            import this data several times to build the correlations between path_1 and path_2
+                
+                advantage of splitting the paths on different lines: the data is imported successively allowing to apply POD on huge data that     cannot be handled all at once. Downside: the same data needs to be imported several times.
+
+                On RUCHE cpu_med, by experience the limit is roughly 1500 snapshots in the same time (depends on mesh).
+                !!!!! the code needs to be able to handle in the same time path_1,path_2 + path_bis_1,path_bis_2,path_bis_3 to build the correlations !!!!!
+            
+
+        -all POD outputs are built within output_path+output_file_name
+        -job output (created by python, independant from the one from slurm) is located within directory_codes+'/JobLogs_output/'+name_job_output
+
+    DIVERSE
+        -should_we_extract_modes: requires to first compute the latents but the two can be put to True together
+
+
+
+
 next improvements to implement : -add restart files if too many snapshots
-                                 -parallelize on dimension D and on meridian sections S
+                                 -parallelize on dimension D (actually tried but with no improvement in physical time...) and on meridian sections S
                                  -add centro-symmetry

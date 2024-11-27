@@ -21,9 +21,18 @@ def main_extract_modes(par):
     #     magnetic_energies = energies[20*nb_DR+10,:]
     if par.should_we_save_phys_POD:
         a_phys = np.load(par.complete_output_path+par.output_file_name+"/a_phys_(mode_time).npy") # signature n,T
-        a_phys = a_phys[par.phys_pod_modes_to_save]
         Nt = a_phys.shape[-1]
+        if par.should_we_save_all_phys_pod_modes:
+            par.phys_pod_modes_to_save = np.arange(Nt)
+        a_phys = a_phys[par.phys_pod_modes_to_save]
         e_phys = np.square(a_phys).sum(-1)/Nt
+
+
+    if par.should_we_save_Fourier_POD and par.should_we_save_all_fourier_pod_modes:
+        a_fourier = np.load(par.complete_output_path+par.output_file_name+f'/latents/cos_mF000.npy') # shape n,T
+        Nt = a_fourier.shape[-1]
+        par.fourier_pod_modes_to_save = np.arange(Nt)
+
 
     for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
         if par.rank == 0:

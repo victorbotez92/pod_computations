@@ -25,7 +25,8 @@ list_several_floats = ['shift_angle']
 list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_energy',
                 'is_the_field_to_be_renormalized_by_its_L2_norm','should_we_save_Fourier_POD','should_we_save_phys_POD',
                 'should_we_save_phys_correlation','should_we_extract_latents','should_we_extract_modes',
-                'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data']
+                'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
+                'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes']
 list_chars = ['mesh_ext','path_to_mesh','directory_pairs','directory_codes','field',
               'path_to_suites','name_job_output','output_path','output_file_name']
 list_several_chars = []
@@ -50,6 +51,8 @@ should_we_extract_latents = par.should_we_extract_latents
 should_we_extract_modes = par.should_we_extract_modes
 should_we_save_Fourier_POD = par.should_we_save_Fourier_POD
 should_we_save_phys_POD = par.should_we_save_phys_POD
+should_we_save_all_fourier_pod_modes = par.should_we_save_all_fourier_pod_modes
+should_we_save_all_phys_pod_modes = par.should_we_save_all_phys_pod_modes
 
 should_we_save_phys_correlation = par.should_we_save_phys_correlation
 
@@ -184,7 +187,6 @@ else:
     for_building_symmetrized_weights = (None,None,WEIGHTS,None)
 
 par.for_building_symmetrized_weights = for_building_symmetrized_weights
-
 
 ########################################################################
 ########################################################################

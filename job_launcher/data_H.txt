@@ -93,10 +93,16 @@ True
 #################################################
 #################################################
 
-===fourier_pod_modes_to_save===
+===should_we_save_all_fourier_pod_modes=== #BEWARE OF MEMORY ISSUES
+False
+
+===fourier_pod_modes_to_save=== #useless if param above set to True
 0,1,2,3,4,5,6
 
-===phys_pod_modes_to_save===
+===should_we_save_all_phys_pod_modes=== #BEWARE OF MEMORY ISSUES
+False
+
+===phys_pod_modes_to_save=== #useless if param above set to True
 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
 
 ######################  Lists of different necessary paths (see ReadMe)
