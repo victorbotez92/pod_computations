@@ -1,5 +1,0 @@
-+ data_directory=/gpfs/users/botezv/APPLICATIONS_POD/test/data_u.txt
-+ echo 'running pod'
-+ srun python /gpfs/users/botezv/APPLICATIONS_POD/pod_computations_test_angle_shift_v3/initialization.py /gpfs/users/botezv/APPLICATIONS_POD/test/data_u.txt
-+ wait
-+ date
