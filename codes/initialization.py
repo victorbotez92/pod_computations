@@ -128,7 +128,7 @@ if should_we_add_mesh_symmetry:
 
 ########################################################################
 ########################################################################
-# Find right parallelization ranks
+# Initializing MPI
 ########################################################################
 ########################################################################
 
@@ -151,6 +151,18 @@ rank_axis,rank_fourier,rank_meridian = indiv_ranks(par)
 par.rank_axis,par.rank_fourier,par.rank_meridian = rank_axis,rank_fourier,rank_meridian
 assert rank == invert_rank(par.rank_fourier,par.rank_axis,par.rank_meridian,par)
 
+########################################################################
+gpe_fourier = comm.group.Incl(list(invert_rank(new_rank_fourier,par.rank_axis,par.rank_meridian,par) for new_rank_fourier in np.arange(par.nb_proc_in_fourier)))
+comm_fourier = comm.Create_group(gpe_fourier)
+par.comm_fourier = comm_fourier
+
+gpe_axis = comm.group.Incl(list(invert_rank(par.rank_fourier,new_rank_axis,par.rank_meridian,par) for new_rank_axis in np.arange(par.nb_proc_in_axis)))
+comm_axis = comm.Create_group(gpe_axis)
+par.comm_axis = comm_axis
+
+gpe_meridian = comm.group.Incl(list(invert_rank(par.rank_fourier,par.rank_axis,new_rank_meridian,par) for new_rank_meridian in np.arange(par.nb_proc_in_meridian)))
+comm_meridian = comm.Create_group(gpe_meridian)
+par.comm_meridian = comm_meridian
 
 ########################################################################
 ########################################################################
@@ -286,3 +298,5 @@ if should_we_extract_modes:
     main_extract_modes(par)
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED MODES EXTRACTION")
+
+MPI.Finalize

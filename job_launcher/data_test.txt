@@ -53,7 +53,7 @@ True
 #################################################
 
 ===nb_proc_in_fourier=== # can use at most one proc for each mF
-50
+25
 
 ===nb_proc_in_axis=== # set to 2 if want to parallelize computations on sine and cosine
 2
@@ -86,7 +86,7 @@ False
 True
 
 ===should_we_combine_with_shifted_data=== # True or False
-True
+False
 
 ===shift_angle=== # write a value between 0 and 1. The shift will be this value times 2\pi. Only relevant when option above set to True
 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875
@@ -124,6 +124,7 @@ False
 
 ===paths_to_data===
 200samples_Re10000/
+
 200samples_Re29000/
 200samples_Re43000/
 200samples_Re70000/
@@ -159,4 +160,4 @@ True
 True
 
 ===should_we_extract_modes===
-True
+False

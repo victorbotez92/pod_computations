@@ -54,13 +54,7 @@ def main_extract_latents(par):
     ############### ==============================================================
     ############### MPI_ALL_REDUCE on meridian planes
     ############### ==============================================================
-            if par.rank_meridian != 0:
-                rank_to_send = invert_rank(par.rank_fourier,par.rank_axis,0,par) # mpi_all_reduce on rank_meridian
-                par.comm.send(correlation,dest=rank_to_send)
-            elif par.rank_meridian == 0:
-                for nb_section in range(1,par.nb_proc_in_meridian):
-                    rank_recv = invert_rank(par.rank_fourier,par.rank_axis,nb_section,par)
-                    correlation += par.comm.recv(source=rank_recv)
+            correlation = par.comm_meridian.reduce(correlation,root=0)
 
     ############### ==============================================================
     ############### Compute POD of Fourier components
@@ -81,7 +75,10 @@ def main_extract_latents(par):
                     else:
                         cumulated_correlation = 1/2*np.copy(correlation)
                 else:
-                    cumulated_correlation += 1/2*correlation
+                    if mF == 0:
+                        cumulated_correlation += correlation
+                    else:
+                        cumulated_correlation += 1/2*correlation
                 del correlation
                 gc.collect()
         # End for a,axis in ['c','s']
@@ -94,27 +91,16 @@ def main_extract_latents(par):
 
 
             ############### MPI_ALL_REDUCE on axis
-        if par.rank_axis != 0:
-            rank_to_send = invert_rank(par.rank_fourier,0,0,par)
-            par.comm.send(cumulated_correlation,dest=rank_to_send)
-        elif par.rank_axis == 0:
-            for nb_axis in range(1,par.nb_proc_in_axis):
-                rank_recv = invert_rank(par.rank_fourier,nb_axis,0,par)
-                cumulated_correlation += par.comm.recv(source=rank_recv)
-            if par.rank == 0:
-                write_job_output(par.path_to_job_output,'Successfully reduced all in axis')
-                
+        cumulated_correlation = par.comm_axis.reduce(cumulated_correlation,root=0)
+        if par.rank == 0:
+            write_job_output(par.path_to_job_output,'Successfully reduced all in axis')
+        if par.rank_axis == 0:
                 ############### MPI_ALL_REDUCE in Fourier
-            if par.rank_fourier != 0:
-                rank_to_send = invert_rank(0,0,0,par)
-                par.comm.send(cumulated_correlation,dest=rank_to_send)
-            elif par.rank_fourier == 0:
-                for nb_fourier in range(1,par.nb_proc_in_fourier):
-                    rank_recv = invert_rank(nb_fourier,0,0,par)
-                    cumulated_correlation += par.comm.recv(source=rank_recv)
-                if par.rank == 0:
-                    write_job_output(par.path_to_job_output,'Successfully reduced all in Fourier')
-
+            cumulated_correlation = par.comm_fourier.reduce(cumulated_correlation,root=0)
+            if par.rank == 0:
+                write_job_output(par.path_to_job_output,'Successfully reduced all in Fourier')
+            
+            if par.rank_fourier == 0:
 
                 pod_a = compute_POD_features(cumulated_correlation)
                 save_pod(par,pod_a)

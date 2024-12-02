@@ -1,10 +1,10 @@
 #!/bin/bash 
-#SBATCH --job-name=test
+#SBATCH --job-name=pod
 #SBATCH -o ./JobLogs/%x.o
 #SBATCH -e ./JobLogs/%x.err
 #SBATCH --exclusive
-#SBATCH --ntasks=200
-#SBATCH --partition=cpu_short
+#SBATCH --ntasks=50
+#SBATCH --partition=mem_short
 #SBATCH --time=1:00:00
 
 
@@ -20,7 +20,7 @@ source /gpfs/users/botezv/.venv/pod/bin/activate
 
 set -x
 
-data_directory="/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/job_launcher/data_hydro.txt"
+data_directory="/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/job_launcher/data_test.txt"
 
 echo 'running pod'
 # srun python /gpfs/users/botezv/APPLICATIONS_POD/pod_computations_test_angle_shift_v3/initialization.py "$data_directory"
