@@ -2,7 +2,7 @@
 import os
 import gc
 
-#from memory_profiler import profile
+from memory_profiler import profile
 
 #sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
 
@@ -16,17 +16,16 @@ class POD:
         self.proj_coeffs = proj_coeffs
         self.modes = modes
 
-#@profile
-
+# @profile
 def compute_POD_features(correlation):
     eigenvalues,eigenvectors = np.linalg.eigh(correlation)
-    Nt = len(correlation)
+    Nt = np.float32(len(correlation))
     del correlation 
     gc.collect()
 
     eigvals = np.abs(eigenvalues[::-1])  # this is good (same signature as code on ruche + the test went well)
     proj_coeffs = (np.sqrt(Nt*(eigvals[:,np.newaxis]).T)*eigenvectors[:,::-1]).T
-    print('eigenvectors',eigenvectors)
+    # print('eigenvectors',eigenvectors)
     del eigenvectors
     gc.collect()
     computed_pod = POD(eigvals,proj_coeffs,0)
@@ -44,7 +43,7 @@ def save_pod(par,pod_field,is_it_phys_pod=True,mF=None,fourier_type=None): #matr
         elif fourier_type == "s":
             a = "sin"
             
-        print("m=",mF,f"{a} eigvals =",Energies)  
+        # print("m=",mF,f"{a} eigvals =",Energies)  
         proj_coefficients = pod_field.proj_coeffs
 
         if par.should_we_add_mesh_symmetry:
@@ -65,7 +64,7 @@ def save_pod(par,pod_field,is_it_phys_pod=True,mF=None,fourier_type=None): #matr
         np.save(par.complete_output_path+'/'+par.output_file_name+f'/energies/spectrum_{a}{mF:03d}.npy',Energies)
 
     else:
-        print("Phys eigvals =",Energies)  
+        # print("Phys eigvals =",Energies)  
         proj_coefficients = pod_field.proj_coeffs
 
         if par.should_we_add_mesh_symmetry:

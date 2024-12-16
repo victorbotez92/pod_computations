@@ -5,6 +5,7 @@ from einops import rearrange
 
 #####################################################
 from read_restart_sfemans import get_data_from_suites
+from basic_functions import write_job_output
 #####################################################
 
 def get_size(path):
@@ -22,7 +23,7 @@ def get_file(path,n):
 def get_data(path_to_suite,field,mesh_type,mF,D,S,T,N,fourier_type = ['c','s']):
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N)//T)
-    data = np.zeros(shape=(T,D,2,N_tot//T))
+    data = np.zeros(shape=(T,D,2,N_tot//T),dtype=np.float32)
     for s in range(S):
         n = N[s]
         for d in range(D):
@@ -32,13 +33,12 @@ def get_data(path_to_suite,field,mesh_type,mF,D,S,T,N,fourier_type = ['c','s']):
                 elif D == 1:
                     path=path_to_suite+"/fourier_{f}{ax}_S{s:04d}_F{m:04d}".format(f=field,ax=axis,s=s,m=mF)+mesh_type
 
-                new_data = np.array(get_file(path,n))
+                new_data = np.array(get_file(path,n),dtype=np.float32)
                 new_data = new_data.reshape(T,len(new_data)//T)
                 if s==0:
                     data[:,d,a,:N_slice[s]]=np.copy(new_data)
                 else:
                     data[:,d,a,N_slice[s-1]:N_slice[s]]=np.copy(new_data)
-                
     return data
 
 ################################# EFFECTIVELY APPLYING RENORMALIZATION
@@ -93,7 +93,11 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
             snapshots_per_suite = int(tab_snapshots_per_suites[0])
             new_data = get_data(par.path_to_suites+path_to_data,
             field_name_in_file,par.mesh_ext,mF,par.D,par.S,snapshots_per_suite,N,fourier_type=[axis])
+            # if par.rank == 0:
+            #     write_job_output(par.path_to_job_output,f'get data: {new_data.dtype}')
             new_data = rearrange(new_data,"t d a n -> t a (d n) ")
+            # if par.rank == 0:
+            #     write_job_output(par.path_to_job_output,f'rearrange: {new_data.dtype}')
 
         ############################ APPLYING THE TRANSFORMATIONS THAT ARE REQUIRED
 
@@ -107,10 +111,12 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
 
     if to_be_shifted and mF != 0: # '.shifted' removed from 'path_to_data' so won't enter this loop in the 'import_data' from below
         if axis == 'c':
-            full_data *= np.cos(mF*2*np.pi*par.shift_angle[num_angle])
-            full_data += np.sin(mF*2*np.pi*par.shift_angle[num_angle])*import_data(par,mF,'s',paths_to_data,field_name_in_file) 
+            full_data *= np.float32(np.cos(mF*2*np.pi*par.shift_angle[num_angle]))
+            full_data += np.float32(np.sin(mF*2*np.pi*par.shift_angle[num_angle]))*import_data(par,mF,'s',paths_to_data,field_name_in_file) 
         elif axis == 's':
-            full_data *= np.cos(mF*2*np.pi*par.shift_angle[num_angle])
-            full_data += -1*np.sin(mF*2*np.pi*par.shift_angle[num_angle])*import_data(par,mF,'c',paths_to_data,field_name_in_file)
+            full_data *= np.float32(np.cos(mF*2*np.pi*par.shift_angle[num_angle]))
+            full_data += np.float32(-1*(np.sin(mF*2*np.pi*par.shift_angle[num_angle])))*import_data(par,mF,'c',paths_to_data,field_name_in_file)
+    # if par.rank == 0:
+    #     write_job_output(par.path_to_job_output,f'full_data: {full_data.dtype}')
 
     return full_data

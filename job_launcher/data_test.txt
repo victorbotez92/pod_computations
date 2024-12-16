@@ -53,7 +53,7 @@ True
 #################################################
 
 ===nb_proc_in_fourier=== # can use at most one proc for each mF
-25
+50
 
 ===nb_proc_in_axis=== # set to 2 if want to parallelize computations on sine and cosine
 2
@@ -124,7 +124,6 @@ False
 
 ===paths_to_data===
 200samples_Re10000/
-
 200samples_Re29000/
 200samples_Re43000/
 200samples_Re70000/
@@ -144,7 +143,7 @@ False
 //
 
 ===name_job_output===
-hydro_all_shifts.txt
+hydro_memory_profiler.txt
 
 
 ######################  Saving options

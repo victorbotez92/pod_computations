@@ -3,9 +3,9 @@
 #SBATCH -o ./JobLogs/%x.o
 #SBATCH -e ./JobLogs/%x.err
 #SBATCH --exclusive
-#SBATCH --ntasks=100
-#SBATCH --partition=mem
-#SBATCH --time=72:00:00
+#SBATCH --ntasks=200
+#SBATCH --partition=cpu_med
+#SBATCH --time=4:00:00
 
 
 cd ${SLURM_SUBMIT_DIR}
@@ -23,8 +23,8 @@ set -x
 data_directory="/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/job_launcher/data_hydro.txt"
 
 echo 'running pod'
-# srun python /gpfs/users/botezv/APPLICATIONS_POD/pod_computations_test_angle_shift_v3/initialization.py "$data_directory"
-srun python /gpfs/users/botezv/APPLICATIONS_POD/pod_computations/codes/initialization.py "$data_directory"
+# srun python /gpfs/users/botezv/APPLICATIONS_POD/pod_computations/codes/initialization.py "$data_directory"
+srun python -m memory_profiler /gpfs/users/botezv/APPLICATIONS_POD/pod_computations/codes/initialization.py "$data_directory"
 
 
 wait

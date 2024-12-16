@@ -6,7 +6,7 @@ import gc
 # import struct
 # from mpi4py import MPI
 
-#from memory_profiler import profile
+from memory_profiler import profile
 
 #sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
 # from einops import rearrange
@@ -16,12 +16,12 @@ import numpy as np
 ###############################
 from POD_computation import compute_POD_features,save_pod
 from compute_correlations import core_correlation_matrix_by_blocks
-from basic_functions import write_job_output,invert_rank
+from basic_functions import write_job_output
 ###############################
 
 
 
-
+#@profile
 def main_extract_latents(par):   
 
     once_make_cor_for_phys = True
@@ -49,13 +49,14 @@ def main_extract_latents(par):
                                                         for_building_symmetrized_weights=par.for_building_symmetrized_weights)
             correlation = np.block(correlation)
             Nt = len(correlation)
-            correlation = 1/Nt*correlation
+            correlation *= np.float32(1/Nt)
      
     ############### ==============================================================
     ############### MPI_ALL_REDUCE on meridian planes
     ############### ==============================================================
             correlation = par.comm_meridian.reduce(correlation,root=0)
-
+            if par.rank == 0:
+                write_job_output(par.path_to_job_output,f'{type(correlation)},{correlation.dtype},Successfully reduced all in Fourier')
     ############### ==============================================================
     ############### Compute POD of Fourier components
     ############### ==============================================================
@@ -73,14 +74,16 @@ def main_extract_latents(par):
                     if mF == 0:
                         cumulated_correlation = np.copy(correlation)
                     else:
-                        cumulated_correlation = 1/2*np.copy(correlation)
+                        cumulated_correlation = np.float32(1/2)*np.copy(correlation)
                 else:
                     if mF == 0:
                         cumulated_correlation += correlation
                     else:
-                        cumulated_correlation += 1/2*correlation
+                        cumulated_correlation += np.float32(1/2)*correlation
                 del correlation
                 gc.collect()
+                # if par.rank == 0:
+                #     write_job_output(par.path_to_job_output,f'{type(cumulated_correlation)},{cumulated_correlation.dtype}')
         # End for a,axis in ['c','s']
     # End for mF in range(rank,MF,size)
     if par.should_we_save_phys_POD and par.rank_meridian == 0: #mpi_all_reduce on meridian already done above

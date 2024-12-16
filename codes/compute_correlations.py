@@ -36,6 +36,7 @@ def compute_correlation(matrix,give_weights=False,weights = [],with_itself = Tru
     Nx = len(matrix)
     if give_weights == False:
         weights = csr_matrix(np.ones(Nx),np.arange(Nx),np.arange(Nx))/Nx
+    weights = weights.astype(np.float32)
     if with_itself:
         return (matrix.T@weights)@matrix
     else:
@@ -70,7 +71,7 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
         first_matrix = import_data(par,mF,axis,path_to_data,field_name_in_file)
         if par.rank == 0:
             write_job_output(par.path_to_job_output,f"      In POD on Fourier => {path_to_data} imported as left matrix")
-
+            # write_job_output(par.path_to_job_output,f'left matrix of type {first_matrix.dtype}')
 
 ###################### ============================================================
 ###################### Computing auto-correlation
@@ -87,6 +88,8 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
         elif par.should_we_add_mesh_symmetry == False:
 
             list_blocs[i][i] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS)
+        # if par.rank == 0:
+        #     write_job_output(par.path_to_job_output,f'new blocks of types {list_blocs[i][i].dtype}, {list_blocs[i][i+factor//2*nb_paths].dtype} and {list_blocs[i+nb_paths][i+factor//2*nb_paths].dtype}')
 
     ############### ==============================================================
     ############### importing matrix on right
