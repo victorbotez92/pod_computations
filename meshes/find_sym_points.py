@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import os
 
 
-path_to_mesh = '/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/meshes/TM87'
-mesh_ext = '.embedded_VKS_0p04_0p01.FEM'#'.mesh_005_02_2_ext3_sym.FEM'
+path_to_mesh = '/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/meshes/TM73_LES'
+mesh_ext = '.mesh_01_02_2_ext3_sym.FEM'#'.embedded_VKS_0p04_0p01.FEM'#'.mesh_005_02_2_ext3_sym.FEM'
 mesh_type = 'vv'
-S = 2
+S = 4
 
 expo = -8
 
@@ -136,7 +136,7 @@ while index < negative_index and z < 0:
     if index%100 == 0:
         print(index)
    # print(index,len(list_pairs),index+last_negative_index,len(new_pairs)-len(list_negative_indexes))
-np.save(path_to_mesh+'/list_pairs_vv',np.array(list_pairs))
+np.save(path_to_mesh+f'/list_pairs_{mesh_type}',np.array(list_pairs))
  #   assert (1+index)*2 == len(list_pairs)
 
 if plot_results:
