@@ -5,6 +5,7 @@ from mpi4py import MPI
 import numpy as np
 
 
+
 ########################################################################
 from read_data import global_parameters
 from compute_renormalizations import renormalization
@@ -26,12 +27,13 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'is_the_field_to_be_renormalized_by_its_L2_norm','should_we_save_Fourier_POD','should_we_save_phys_POD',
                 'should_we_save_phys_correlation','should_we_extract_latents','should_we_extract_modes',
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
-                'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes']
+                'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
+                'should_we_remove_mean_field','should_we_remove_custom_field']
 list_chars = ['mesh_ext','path_to_mesh','directory_pairs','directory_codes','field',
-              'path_to_suites','name_job_output','output_path','output_file_name']
+              'path_to_suites','name_job_output','output_path','output_file_name','type_sym']
 list_several_chars = []
 list_several_list_chars = ['paths_to_data']
-
+list_fcts = ['fct_for_custom_field']
 
 list_vv_mesh = ['u','Tub']
 list_H_mesh = ['B','H','Mmu','Dsigma']
@@ -39,7 +41,8 @@ list_H_mesh = ['B','H','Mmu','Dsigma']
 ########################################################################
 ########################################################################
 
-par = global_parameters(data_file,list_ints,list_several_ints,list_floats,list_several_floats,list_bools,list_chars,list_several_chars,list_several_list_chars)
+par = global_parameters(data_file,list_ints,list_several_ints,list_floats,list_several_floats,list_bools,
+list_chars,list_several_chars,list_several_list_chars,list_fcts)
 
 READ_FROM_SUITE = par.READ_FROM_SUITE
 
@@ -63,6 +66,7 @@ is_the_field_to_be_renormalized_by_its_L2_norm = par.is_the_field_to_be_renormal
 renormalize = (is_the_field_to_be_renormalized_by_magnetic_energy or is_the_field_to_be_renormalized_by_its_L2_norm)
 
 should_we_add_mesh_symmetry = par.should_we_add_mesh_symmetry
+type_sym = par.type_sym
 should_we_combine_with_shifted_data = par.should_we_combine_with_shifted_data
 shift_angle = par.shift_angle
 
@@ -132,14 +136,18 @@ if should_we_add_mesh_symmetry:
 ########################################################################
 ########################################################################
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-
-
 nb_proc_in_fourier = par.nb_proc_in_fourier
 nb_proc_in_axis = par.nb_proc_in_axis
 nb_proc_in_meridian = par.nb_proc_in_meridian
+
+if nb_proc_in_fourier*nb_proc_in_axis*nb_proc_in_meridian==1:
+    rank = 0
+    size = 1
+    comm = None
+else:
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
 
 assert (size==nb_proc_in_fourier*nb_proc_in_axis*nb_proc_in_meridian)
 
@@ -152,17 +160,19 @@ par.rank_axis,par.rank_fourier,par.rank_meridian = rank_axis,rank_fourier,rank_m
 assert rank == invert_rank(par.rank_fourier,par.rank_axis,par.rank_meridian,par)
 
 ########################################################################
-gpe_fourier = comm.group.Incl(list(invert_rank(new_rank_fourier,par.rank_axis,par.rank_meridian,par) for new_rank_fourier in np.arange(par.nb_proc_in_fourier)))
-comm_fourier = comm.Create_group(gpe_fourier)
-par.comm_fourier = comm_fourier
+if size > 1:
 
-gpe_axis = comm.group.Incl(list(invert_rank(par.rank_fourier,new_rank_axis,par.rank_meridian,par) for new_rank_axis in np.arange(par.nb_proc_in_axis)))
-comm_axis = comm.Create_group(gpe_axis)
-par.comm_axis = comm_axis
+    gpe_fourier = comm.group.Incl(list(invert_rank(new_rank_fourier,par.rank_axis,par.rank_meridian,par) for new_rank_fourier in np.arange(par.nb_proc_in_fourier)))
+    comm_fourier = comm.Create_group(gpe_fourier)
+    par.comm_fourier = comm_fourier
 
-gpe_meridian = comm.group.Incl(list(invert_rank(par.rank_fourier,par.rank_axis,new_rank_meridian,par) for new_rank_meridian in np.arange(par.nb_proc_in_meridian)))
-comm_meridian = comm.Create_group(gpe_meridian)
-par.comm_meridian = comm_meridian
+    gpe_axis = comm.group.Incl(list(invert_rank(par.rank_fourier,new_rank_axis,par.rank_meridian,par) for new_rank_axis in np.arange(par.nb_proc_in_axis)))
+    comm_axis = comm.Create_group(gpe_axis)
+    par.comm_axis = comm_axis
+
+    gpe_meridian = comm.group.Incl(list(invert_rank(par.rank_fourier,par.rank_axis,new_rank_meridian,par) for new_rank_meridian in np.arange(par.nb_proc_in_meridian)))
+    comm_meridian = comm.Create_group(gpe_meridian)
+    par.comm_meridian = comm_meridian
 
 ########################################################################
 ########################################################################
@@ -170,13 +180,20 @@ par.comm_meridian = comm_meridian
 ########################################################################
 ########################################################################
 
+R = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}rr_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
+Z = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
 W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
 WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
 
 if should_we_add_mesh_symmetry:
     # ADAPT WHEN USING SEVERAL PROCS IN MERIDIAN
     if D == 3:
-        relative_signs = [1,-1,-1] #cf Rpi-symmetry for the three components
+        if type_sym == 'Rpi':
+            relative_signs = [1,-1,-1]
+        elif type_sym == 'centro':
+            relative_signs = [1,1,-1]
+        else:
+            raise ValueError(f'type_sym must be either Rpi or centro, the value {type_sym} is not valid')
         # do the same for centro-symmetry ?
     elif D == 1:
         relative_signs = [1]
@@ -200,6 +217,8 @@ else:
 
 par.for_building_symmetrized_weights = for_building_symmetrized_weights
 
+par.R = R
+par.Z = Z
 ########################################################################
 ########################################################################
 ########################################################################
@@ -215,6 +234,7 @@ par.path_to_job_output = path_to_job_output
 
 os.system(f"touch {directory_codes + '/JobLogs_outputs'}")
 os.system(f"touch {path_to_job_output}")
+# os.makedirs(path_to_job_output)
 
 if rank == 0:
     with open(path_to_job_output,'w') as f:
@@ -299,4 +319,5 @@ if should_we_extract_modes:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED MODES EXTRACTION")
 
-MPI.Finalize
+if size != 1:
+    MPI.Finalize

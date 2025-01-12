@@ -71,13 +71,17 @@ def main_extract_modes(par):
                         sym_data = rearrange(new_data,"t (d n) -> t d n",d=par.D)
                         del new_data
                         gc.collect()
-                        for d in range(par.D):
-                            d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
-                            sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
-
-                        if axis == 's':  # factor -1 when performing rpi-sym on sine components
-                            sym_data *= (-1)
-
+                        if par.type_sym == 'Rpi':
+                            for d in range(par.D):
+                                d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
+                                sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
+                            if axis == 's':  # factor -1 when performing rpi-sym on sine components
+                                sym_data *= (-1)
+                        elif par.type_sym == 'centro':
+                            for d in range(par.D):
+                                d_coeff = (1/2-(d == 2))*2 # this coeff has value +1 when d = 0 (so for component r) and -1 when d > 0 (so for components theta and z)
+                                sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
+                            sym_data *= (-1)**mF# factor -1 when performing centro-sym on even Fourier modes
                         sym_data = rearrange(sym_data,"t d n  -> t (d n)")
                         if par.should_we_save_Fourier_POD:
                             fourier_pod_modes += 1/(Nt*e_fourier[:,None]) * a_fourier[:,Nt//2+previous_nb_snapshots:Nt//2+local_nb_snapshots]@sym_data

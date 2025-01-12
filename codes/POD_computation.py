@@ -2,7 +2,7 @@
 import os
 import gc
 
-from memory_profiler import profile
+# from memory_profiler import profile
 
 #sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
 
@@ -50,11 +50,15 @@ def save_pod(par,pod_field,is_it_phys_pod=True,mF=None,fourier_type=None): #matr
             latents_not_sym = proj_coefficients[:len(proj_coefficients)//2,:len(proj_coefficients)//2]
             latents_sym = proj_coefficients[:len(proj_coefficients)//2,len(proj_coefficients)//2:]
             symmetry_of_latents = np.sign(np.sum(latents_not_sym*latents_sym,axis = 1)) #sum is performed over time at fixed nP
-            if a == 'c':
-                symmetry_of_latents *= 1
-            elif a == 's':
-                symmetry_of_latents *= -1
-
+            if par.type_sym == "Rpi":
+                if a == 'c':
+                    symmetry_of_latents *= 1
+                elif a == 's':
+                    symmetry_of_latents *= -1
+            elif par.type_sym == 'centro':
+                symmetry_of_latents *= (-1)**mF
+            else:
+                raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
             os.makedirs(par.complete_output_path+"/"+par.output_file_name+f"/symmetry" ,exist_ok=True)
             np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetry/{a}_mF{mF:03d}.npy",symmetry_of_latents)
 

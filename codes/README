@@ -57,3 +57,4 @@ BE CAREFUL BECAUSE THE INTRODUCTION OF SHIFT ANGLES IS INCOMPATIBLE WITH DIRECTO
 next improvements to implement : -add restart files if too many snapshots
                                  -parallelize on dimension D (actually tried but with no improvement in physical time...) and on meridian sections S
                                  -add centro-symmetry
+                                 -There is a pb about the way we save symmetry, try thinking about it again... ... ...
