@@ -1,0 +1,15 @@
+Unloading module metis/5.1.0 
+Unloading module petsc/3.22.2 
+Unloading module openmpi/4.1.6 
+Unloading module fftw/3.3.10-ompi415 
+Unloading module cmake/3.26.1 
+Unloading module valgrind/3.14.0 
+Unloading module hdf5/1.14.0 
+Unloading module zlib/1.2.11 
+Unloading module gcc/12.2.0 
+Loading module python/3.10.4 
++ echo 'finding sym points'
++ mpirun python /gpfs/users/botezv/APPLICATIONS_POD/pod_computations/meshes/find_sym_points.py
+/var/spool/slurmd/job9259962/slurm_script: line 28: mpirun: command not found
++ wait
++ date
