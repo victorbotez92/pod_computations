@@ -15,6 +15,9 @@
 ===directory_codes===
 /gpfs/users/botezv/APPLICATIONS_POD/pod_computations/
 
+===nb_bits=== #either 32 or 64 (64 necessary when including shifts?)
+64
+
 ##################### Data for computing POD latents (first step)
 #################################################
 #################################################

@@ -49,7 +49,7 @@ def main_extract_latents(par):
                                                         for_building_symmetrized_weights=par.for_building_symmetrized_weights)
             correlation = np.block(correlation)
             Nt = len(correlation)
-            correlation *= np.float32(1/Nt)
+            correlation *= par.type_float(1/Nt)
      
     ############### ==============================================================
     ############### MPI_ALL_REDUCE on meridian planes
@@ -63,7 +63,7 @@ def main_extract_latents(par):
 
             if par.should_we_save_Fourier_POD and par.rank_meridian == 0:
         
-                pod_a = compute_POD_features(correlation)
+                pod_a = compute_POD_features(par,correlation)
                 save_pod(par,pod_a,is_it_phys_pod=False,mF=mF,fourier_type=axis)
                 del pod_a
                 gc.collect()
@@ -74,12 +74,12 @@ def main_extract_latents(par):
                     if mF == 0:
                         cumulated_correlation = np.copy(correlation)
                     else:
-                        cumulated_correlation = np.float32(1/2)*np.copy(correlation)
+                        cumulated_correlation = par.type_float(1/2)*np.copy(correlation)
                 else:
                     if mF == 0:
                         cumulated_correlation += correlation
                     else:
-                        cumulated_correlation += np.float32(1/2)*correlation
+                        cumulated_correlation += par.type_float(1/2)*correlation
                 del correlation
                 gc.collect()
                 # if par.rank == 0:
@@ -105,7 +105,7 @@ def main_extract_latents(par):
             
             if par.rank_fourier == 0:
 
-                pod_a = compute_POD_features(cumulated_correlation)
+                pod_a = compute_POD_features(par,cumulated_correlation)
                 save_pod(par,pod_a)
                 write_job_output(par.path_to_job_output,f'succesfully saved spectra for symetrized suites (phys POD)')
 

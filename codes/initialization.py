@@ -18,7 +18,7 @@ data_file = sys.argv[1]
 ########################################################################
 ########################################################################
 
-list_ints = ['D','S','MF','nb_proc_in_fourier','nb_proc_in_axis','nb_proc_in_meridian']
+list_ints = ['D','S','MF','nb_proc_in_fourier','nb_proc_in_axis','nb_proc_in_meridian','nb_bits']
 list_several_ints = ['fourier_pod_modes_to_save','phys_pod_modes_to_save']
 list_floats = []
 list_several_floats = ['shift_angle']
@@ -36,10 +36,26 @@ list_several_list_chars = ['paths_to_data']
 list_vv_mesh = ['u','Tub']
 list_H_mesh = ['B','H','Mmu','Dsigma']
 
-########################################################################
-########################################################################
+
 
 par = global_parameters(data_file,list_ints,list_several_ints,list_floats,list_several_floats,list_bools,list_chars,list_several_chars,list_several_list_chars)
+
+########################################################################
+########################################################################
+# Defining accuracy
+
+nb_bits = par.nb_bits
+
+if nb_bits == 32:
+    type_float = np.float32
+elif nb_bits == 64:
+    type_float = np.float64
+
+par.type_float = type_float
+
+
+########################################################################
+########################################################################
 
 READ_FROM_SUITE = par.READ_FROM_SUITE
 
@@ -119,7 +135,7 @@ assert (field in list_vv_mesh) or (field in list_H_mesh)
 if should_we_add_mesh_symmetry:
     pairs=f"list_pairs_{mesh_type}.npy"
     list_pairs = np.load(directory_pairs+pairs)
-    tab_pairs = np.empty(2*len(list_pairs),dtype=np.int32)
+    tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
     for elm in list_pairs:
         index,sym_index = elm
         tab_pairs[index] = int(sym_index)

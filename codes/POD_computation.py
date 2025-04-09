@@ -17,9 +17,9 @@ class POD:
         self.modes = modes
 
 # @profile
-def compute_POD_features(correlation):
+def compute_POD_features(par,correlation):
     eigenvalues,eigenvectors = np.linalg.eigh(correlation)
-    Nt = np.float32(len(correlation))
+    Nt = par.type_float(len(correlation))
     del correlation 
     gc.collect()
 
@@ -79,14 +79,38 @@ def save_pod(par,pod_field,is_it_phys_pod=True,mF=None,fourier_type=None): #matr
 
 ############ MESH SYMMETRY FUNCTIONS (not working because data too big to be handled by numpy, in practice it is always written explicitly)
 
-def apply_rpi_symmetry(data,D,axis,tab_pairs):
+def apply_rpi_symmetry(data,D,axis,mF,tab_pairs):
 
-        newdata = rearrange(data,"t (d n) -> t d n",d=D)
-        real_new_data = np.empty(np.shape(newdata))
+        data = rearrange(data,"t (d n) -> t d n",d=D)
+        #real_new_data = np.empty(np.shape(newdata))
+        #for d in range(D):
+         #   d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
+        data = data[:,:,tab_pairs]
+        #real_new_data[:,d,:] = d_coeff*newdata[:,d,tab_pairs]
         for d in range(D):
-            d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
-            real_new_data[:,d,:] = d_coeff*newdata[:,d,tab_pairs]
+            d_coeff = ((d == 0)-1/2)*2
+            data[:,d,:] *= d_coeff
         if axis == 's':  # factor -1 when performing rpi-sym on sine components
-            real_new_data *= (-1)
-        real_new_data = rearrange(newdata,"t d n  -> t (d n)")
-        return newdata
+            data *= -1
+            #real_new_data *= (-1)
+        #real_new_data = rearrange(newdata,"t d n  -> t (d n)")
+        data = rearrange(data,"t d n  -> t (d n)")
+        # return newdata
+
+def apply_centro_symmetry(data,D,axis,mF,tab_pairs):  # THIS IS WRONG BECAUSE IT WILL DEPEND ON THE FOURIER MODE mF
+
+        data = rearrange(data,"t (d n) -> t d n",d=D)
+        #real_new_data = np.empty(np.shape(newdata))
+        #for d in range(D):
+         #   d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
+        data = data[:,:,tab_pairs]
+        #real_new_data[:,d,:] = d_coeff*newdata[:,d,tab_pairs]
+        for d in range(D):
+            d_coeff = ((d == 0)+(d == 1)-1/2)*2
+            data[:,d,:] *= d_coeff
+        if mF%2 == 1:  # factor -1 when performing centro-sym on odd Fourier components
+            data *= -1
+            #real_new_data *= (-1)
+        #real_new_data = rearrange(newdata,"t d n  -> t (d n)")
+        data = rearrange(data,"t d n  -> t (d n)")
+        # return newdata

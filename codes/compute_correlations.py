@@ -32,11 +32,11 @@ def build_symmetrized_weights(rows,columns,WEIGHTS,WEIGHTS_with_symmetry,D = 3,a
     sym_on_right_and_left = csr_matrix((WEIGHTS[adapted_rows],(adapted_columns,adapted_columns)))
     return sym_on_right,sym_on_left,sym_on_right_and_left
 
-def compute_correlation(matrix,give_weights=False,weights = [],with_itself = True,second_matrix = None):   
+def compute_correlation(matrix,give_weights=False,weights = [],with_itself = True,second_matrix = None,type_float=np.float64):   
     Nx = len(matrix)
     if give_weights == False:
         weights = csr_matrix(np.ones(Nx),np.arange(Nx),np.arange(Nx))/Nx
-    weights = weights.astype(np.float32)
+    weights = weights.astype(type_float)
     if with_itself:
         return (matrix.T@weights)@matrix
     else:
@@ -79,15 +79,15 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
         if par.should_we_add_mesh_symmetry == True:
 
-            list_blocs[i][i] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS)
-            list_blocs[i][i+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right)
-            list_blocs[i+nb_paths][i+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right_and_left)
+            list_blocs[i][i] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,type_float=par.type_float)
+            list_blocs[i][i+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right,type_float=par.type_float)
+            list_blocs[i+nb_paths][i+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right_and_left,type_float=par.type_float)
             
             list_blocs[i+nb_paths][i] = list_blocs[i][i+factor//2*nb_paths].T
 
         elif par.should_we_add_mesh_symmetry == False:
 
-            list_blocs[i][i] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS)
+            list_blocs[i][i] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,type_float=par.type_float)
         # if par.rank == 0:
         #     write_job_output(par.path_to_job_output,f'new blocks of types {list_blocs[i][i].dtype}, {list_blocs[i][i+factor//2*nb_paths].dtype} and {list_blocs[i+nb_paths][i+factor//2*nb_paths].dtype}')
 
@@ -106,11 +106,11 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
             if par.should_we_add_mesh_symmetry == True:
 
-                list_blocs[i][j] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,with_itself = False,second_matrix = second_matrix.T)
+                list_blocs[i][j] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
 
-                list_blocs[i][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right,with_itself = False,second_matrix = second_matrix.T)
-                list_blocs[i+factor//2*nb_paths][j] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_left,with_itself = False,second_matrix = second_matrix.T)
-                list_blocs[i+factor//2*nb_paths][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right_and_left,with_itself = False,second_matrix = second_matrix.T)
+                list_blocs[i][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
+                list_blocs[i+factor//2*nb_paths][j] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_left,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
+                list_blocs[i+factor//2*nb_paths][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right_and_left,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
                 
                 list_blocs[j][i] = list_blocs[i][j].T
                 list_blocs[j+factor//2*nb_paths][i] = list_blocs[i][j+factor//2*nb_paths].T
@@ -119,7 +119,7 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
             elif par.should_we_add_mesh_symmetry == False:
 
-                list_blocs[i][j] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,with_itself = False,second_matrix = second_matrix.T)
+                list_blocs[i][j] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
 
                 list_blocs[j][i] = list_blocs[i][j].T
         # end for j in [i+1,nb_paths]
