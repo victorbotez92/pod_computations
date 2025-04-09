@@ -1,11 +1,15 @@
-#!/bin/bash 
-#SBATCH --job-name=compute_pod
-#SBATCH -o ./JobLogs/%x.o
-#SBATCH -e ./JobLogs/%x.err
+#!/bin/bash
+#SBATCH --job-name=pod      # nom du job
+### SBATCH -N 2
+###SBATCH --ntasks-per-node=128        
+#SBATCH --ntasks=1
+#SBATCH --time=5:00:00            # max execution time (HH:MM:SS)
+#SBATCH --output=JobLogs/%x.o%j  # job returns
+#SBATCH --error=JobLogs/%x.err%j   # errors
+#SBATCH --partition=milan       # intel/intel_32/defq/mem768/rome/milan/genoa
 #SBATCH --exclusive
-#SBATCH --ntasks=128
-#SBATCH --partition=cpu_med
-#SBATCH --time=4:00:00
+#SBATCH -A fwd
+
 
 
 cd ${SLURM_SUBMIT_DIR}
@@ -13,17 +17,16 @@ cd ${SLURM_SUBMIT_DIR}
 
 date
 module purge
-module load anaconda3/2022.10/gcc-11.2.0
-module load openmpi/3.1.6/gcc-11.2.0
 
-source /gpfs/users/botezv/.venv/pod/bin/activate
+source ~/environments/code_env
+pod_env
 
 set -x
 
 data_directory="/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/data_example.txt"
 
 echo 'running pod'
-srun python /gpfs/users/botezv/APPLICATIONS_POD/pod_computations/initialization.py "$data_directory"
+srun python /home/botez18/APPLICATIONS_POD/pod_computations/codes/initialization.py "$data_directory"
 
 wait
 date

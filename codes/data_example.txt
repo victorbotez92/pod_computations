@@ -84,6 +84,9 @@ False
 ===should_we_add_mesh_symmetry=== # For now only working with Rpi-symmetry, not centro-symmetry
 True
 
+===type_sym=== # can be Rpi (for Rpi-symmetry cf VK) or centro (for centro-symmetry cf Dresdyn)
+centro
+
 ===should_we_combine_with_shifted_data=== # True or False
 True
 
@@ -92,6 +95,21 @@ True
 
 # !!!!! BEWARE FOR RPI SYM IS NOT VALID ANYMORE IF THE ANGLE IS NOT A MULTIPLE OF (2\pi)/8 (risk it messes up with the mF = 8 modes)
 # possible values : 0., 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875
+
+###################### data manipulation before computing correlations
+#################################################
+#################################################
+#################################################
+#################################################
+
+===should_we_remove_mean_field=== #this will average the axisym component and remove it from the field (NOT WORKING)
+True
+
+===should_we_remove_custom_field===
+True
+
+===fct_for_custom_field=== #name of the function, defined in template_fields_to_remove.py, that will be removed to field of POD
+example
 
 ######################  Parameters for saving POD modes (Second step)
 #################################################

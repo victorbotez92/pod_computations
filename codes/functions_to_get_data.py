@@ -103,6 +103,9 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
 
         if should_we_renormalize:
             new_data = apply_renormalization(par,new_data,path_to_data)
+        if par.should_we_remove_custom_field:
+            new_data = new_data-par.fct_for_custom_field(mF,par.R,par.Z)[np.newaxis,:]
+
         if num == 0:
             full_data = np.copy(new_data)
         else:

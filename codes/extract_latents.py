@@ -6,7 +6,7 @@ import gc
 # import struct
 # from mpi4py import MPI
 
-from memory_profiler import profile
+# from memory_profiler import profile
 
 #sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
 # from einops import rearrange
@@ -54,9 +54,10 @@ def main_extract_latents(par):
     ############### ==============================================================
     ############### MPI_ALL_REDUCE on meridian planes
     ############### ==============================================================
-            correlation = par.comm_meridian.reduce(correlation,root=0)
-            if par.rank == 0:
-                write_job_output(par.path_to_job_output,f'{type(correlation)},{correlation.dtype},Successfully reduced all in Fourier')
+            if par.size > 1:
+                correlation = par.comm_meridian.reduce(correlation,root=0)
+                if par.rank == 0:
+                    write_job_output(par.path_to_job_output,f'{type(correlation)},{correlation.dtype},Successfully reduced all in Meridian')
     ############### ==============================================================
     ############### Compute POD of Fourier components
     ############### ==============================================================
@@ -94,14 +95,16 @@ def main_extract_latents(par):
 
 
             ############### MPI_ALL_REDUCE on axis
-        cumulated_correlation = par.comm_axis.reduce(cumulated_correlation,root=0)
-        if par.rank == 0:
-            write_job_output(par.path_to_job_output,'Successfully reduced all in axis')
+        if par.size > 1:
+            cumulated_correlation = par.comm_axis.reduce(cumulated_correlation,root=0)
+            if par.rank == 0:
+                write_job_output(par.path_to_job_output,'Successfully reduced all in axis')
         if par.rank_axis == 0:
                 ############### MPI_ALL_REDUCE in Fourier
-            cumulated_correlation = par.comm_fourier.reduce(cumulated_correlation,root=0)
-            if par.rank == 0:
-                write_job_output(par.path_to_job_output,'Successfully reduced all in Fourier')
+            if par.size > 1:
+                cumulated_correlation = par.comm_fourier.reduce(cumulated_correlation,root=0)
+                if par.rank == 0:
+                    write_job_output(par.path_to_job_output,'Successfully reduced all in Fourier')
             
             if par.rank_fourier == 0:
 

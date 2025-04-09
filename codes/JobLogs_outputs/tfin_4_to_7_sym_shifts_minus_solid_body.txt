@@ -1,0 +1,12 @@
+
+Initialization done successfully
+The data will be gathered as follows:
+[['/tfin_4/binaries_out/u/', '/tfin_5/binaries_out/u/', '/tfin_6/binaries_out/u/', '/tfin_7/binaries_out/u/'], ['/tfin_4/binaries_out/u/.shifted_0', '/tfin_5/binaries_out/u/.shifted_0', '/tfin_6/binaries_out/u/.shifted_0', '/tfin_7/binaries_out/u/.shifted_0'], ['/tfin_4/binaries_out/u/.shifted_1', '/tfin_5/binaries_out/u/.shifted_1', '/tfin_6/binaries_out/u/.shifted_1', '/tfin_7/binaries_out/u/.shifted_1'], ['/tfin_4/binaries_out/u/.shifted_2', '/tfin_5/binaries_out/u/.shifted_2', '/tfin_6/binaries_out/u/.shifted_2', '/tfin_7/binaries_out/u/.shifted_2']]
+=========================================================== BEGINNING MODES EXTRACTION
+entering Fourier loop 1/6
+entering Fourier loop 2/6
+entering Fourier loop 3/6
+entering Fourier loop 4/6
+entering Fourier loop 5/6
+entering Fourier loop 6/6
+=========================================================== FINISHED MODES EXTRACTION

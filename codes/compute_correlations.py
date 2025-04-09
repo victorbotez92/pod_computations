@@ -15,11 +15,16 @@ from basic_functions import write_job_output
 
 ###############################
 
-def build_symmetrized_weights(rows,columns,WEIGHTS,WEIGHTS_with_symmetry,D = 3,axis='c'):
-    if axis == 's':
-        symmetry_coeff = -1
-    elif axis == 'c':
-        symmetry_coeff = 1
+def build_symmetrized_weights(type_sym,rows,columns,WEIGHTS,WEIGHTS_with_symmetry,D = 3,axis='c',mF=0):
+    if type_sym == 'Rpi':
+        if axis == 's':
+            symmetry_coeff = -1
+        elif axis == 'c':
+            symmetry_coeff = 1
+    elif type_sym == 'centro':
+        symmetry_coeff = (-1)**mF
+    else:
+        raise ValueError(f'type_sym must be Rpi or centro, not {type_sym}')
     if D == 3:
         adapted_rows = np.concatenate((rows,rows+len(rows),rows+2*len(rows)))
         adapted_columns = np.concatenate((columns,columns+len(columns),columns+2*len(columns)))
@@ -56,8 +61,8 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
     factor = 1
     if par.should_we_add_mesh_symmetry:
         factor *= 2
-        weight_sym_on_right,weight_sym_on_left,weight_sym_on_right_and_left = build_symmetrized_weights(rows,columns,WEIGHTS,WEIGHTS_with_symmetry,
-        D = par.D,axis=axis)
+        weight_sym_on_right,weight_sym_on_left,weight_sym_on_right_and_left = build_symmetrized_weights(par.type_sym,rows,columns,WEIGHTS,WEIGHTS_with_symmetry,
+        D = par.D,axis=axis,mF=mF)
     # No need because already taken into account in nb_paths (Cf path_to_data containing some ".shifted" in initialization.py)
     # if should_we_combine_with_shifted_data: 
     #     factor *= 2

@@ -1,8 +1,10 @@
 import numpy as np
+from template_fields_to_remove import *
 
 class parameters:
     def __init__(self,list_ints,elms_ints,list_several_ints,elms_lists_ints,list_floats,elms_floats,list_several_floats,elms_lists_floats,list_bools,
-                                elms_bools,list_chars,elms_chars,list_several_chars,elms_lists_chars,list_several_list_chars,elms_lists_lists_chars):
+                                elms_bools,list_chars,elms_chars,list_several_chars,elms_lists_chars,list_several_list_chars,elms_lists_lists_chars,
+                                list_fcts,elms_fcts):
         for i in range(len(list_ints)):
             setattr(self,list_ints[i],elms_ints[i])
         for i in range(len(list_several_ints)):
@@ -19,8 +21,12 @@ class parameters:
             setattr(self,list_several_chars[i],elms_lists_chars[i])
         for i in range(len(list_several_list_chars)):
             setattr(self,list_several_list_chars[i],elms_lists_lists_chars[i])
+        for i in range(len(list_fcts)):
+            setattr(self,list_fcts[i],elms_fcts[i])
 
-def global_parameters(data_file,list_ints,list_several_ints,list_floats,list_several_floats,list_bools,list_chars,list_several_chars,list_several_list_chars):
+
+def global_parameters(data_file,list_ints,list_several_ints,list_floats,list_several_floats,list_bools,
+list_chars,list_several_chars,list_several_list_chars,list_fcts):
     with open(data_file,'r') as f:
         raw_lines = f.readlines()
 
@@ -65,6 +71,14 @@ def global_parameters(data_file,list_ints,list_several_ints,list_floats,list_sev
                     list_new_params[k] = float(num)
                 globals()[new_name] = list_new_params
                 list_new_params = np.array(list_new_params,dtype=float)
+            elif new_name in list_fcts:
+                if new_name == "fct_for_custom_field":
+                    new_param = raw_lines[i+1].split('\n')[0]
+                    new_param = new_param.split(',')[0]
+                    print(new_param)
+
+                    fct_for_custom_field = globals()[new_param]
+                    # globals()[new_name] = globals()[new_param]
             else:
                 new_param = raw_lines[i+1].split('\n')[0]
                 if new_name in list_ints:
@@ -87,9 +101,12 @@ def global_parameters(data_file,list_ints,list_several_ints,list_floats,list_sev
     elms_chars = [globals()[quantity_char] for quantity_char in list_chars]
     elms_lists_chars = [globals()[several_chars] for several_chars in list_several_chars]
     elms_lists_lists_chars = [globals()[several_lists_chars] for several_lists_chars in list_several_list_chars]
+    # elms_fcts = [globals()[quantity_func] for quantity_func in list_fcts]
+    elms_fcts = [fct_for_custom_field]
 
     all_parameters = parameters(list_ints,elms_ints,list_several_ints,elms_lists_ints,list_floats,elms_floats,list_several_floats,elms_lists_floats,
                                 list_bools,elms_bools,
-                                list_chars,elms_chars,list_several_chars,elms_lists_chars,list_several_list_chars,elms_lists_lists_chars)
+                                list_chars,elms_chars,list_several_chars,elms_lists_chars,list_several_list_chars,elms_lists_lists_chars,
+                                list_fcts,elms_fcts)
 
     return all_parameters
