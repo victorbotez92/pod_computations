@@ -2,15 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-
-path_to_mesh = '/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/meshes/TM73_LES'
-mesh_ext = '.mesh_01_02_2_ext3_sym.FEM'#'.embedded_VKS_0p04_0p01.FEM'#'.mesh_005_02_2_ext3_sym.FEM'
+path_to_mesh = '/home/botez18/APPLICATIONS_POD/pod_computations/meshes/prec_les'
+mesh_ext = '.MHD_RECT80_60_40_H_2R_1_SYM_unform.FEM'
+#'.MHD_RECT200_LINE100_80_40_H_2R_1_SYM_unform.FEM'#'.embedded_VKS_0p04_0p01.FEM'#'.mesh_005_02_2_ext3_sym.FEM'
 mesh_type = 'vv'
-S = 4
+S = 2
 
 expo = -8
 
 plot_results = True
+
 
 R = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}rr_S{s:04d}"+mesh_ext) for s in range(S)]).reshape(-1)
 Z = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext) for s in range(S)]).reshape(-1)
@@ -139,15 +140,19 @@ while index < negative_index and z < 0:
 np.save(path_to_mesh+f'/list_pairs_{mesh_type}',np.array(list_pairs))
  #   assert (1+index)*2 == len(list_pairs)
 
+list_differences_R = []
+list_differences_Z = []
+for elm in list_pairs:
+    i,j = elm[0],elm[1]
+    list_differences_R.append(np.abs(R[i]-R[j]))
+    list_differences_Z.append(np.abs(Z[i] + Z[j]))
+plt.plot(np.arange(len(list_differences_R)),list_differences_R,label='R')
+plt.plot(np.arange(len(list_differences_Z)),list_differences_Z,label='Z')
+plt.legend()
+plt.title('if calculations went well, then all points should be orders of magnitudes below 0')
+
 if plot_results:
-    list_differences_R = []
-    list_differences_Z = []
-    for elm in list_pairs:
-        i,j = elm[0],elm[1]
-        list_differences_R.append(np.abs(R[i]-R[j]))
-        list_differences_Z.append(np.abs(Z[i] + Z[j]))
-    plt.plot(np.arange(len(list_differences_R)),list_differences_R,label='R')
-    plt.plot(np.arange(len(list_differences_Z)),list_differences_Z,label='Z')
-    plt.legend()
-    plt.title('if calculations went well, then all points should be orders of magnitudes below 0')
     plt.show()
+else:
+    plt.figsave(f'{path_to_mesh}/vv_verif.png')
+    plt.close()
