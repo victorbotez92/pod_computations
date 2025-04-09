@@ -1,0 +1,21 @@
+Mon Jan  6 09:09:19 CET 2025
+finding sym points
+Mon Jan  6 09:09:21 CET 2025
+
+------------------------------
+- - - - - job epilog - - - - -
+------------------------------
+Job ID: 9259962
+was running on nodes: cmi024
+by user: botez18
+in partition: milan
+using account: fwd
+number of CPUs used: 128
+number of nodes requested: 1
+------------------------------
+walltime reqd: 05:00:00
+walltime used: 00:00:02
+------------------------------
+Mon Jan 6 09:09:22 CET 2025
+------------------------------
+
