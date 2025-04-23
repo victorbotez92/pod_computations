@@ -1,0 +1,18 @@
+
+Initialization done successfully
+The data will be gathered as follows:
+[['/tfin_4/binaries_out/u/', '/tfin_5/binaries_out/u/', '/tfin_6/binaries_out/u/', '/tfin_7/binaries_out/u/'], ['/tfin_8/binaries_out/u/', '/tfin_9/binaries_out/u/', '/tfin_10/binaries_out/u/', '/tfin_11/binaries_out/u/', '/tfin_12/binaries_out/u/'], ['/tfin_4/binaries_out/u/.shifted_0', '/tfin_5/binaries_out/u/.shifted_0', '/tfin_6/binaries_out/u/.shifted_0', '/tfin_7/binaries_out/u/.shifted_0'], ['/tfin_8/binaries_out/u/.shifted_0', '/tfin_9/binaries_out/u/.shifted_0', '/tfin_10/binaries_out/u/.shifted_0', '/tfin_11/binaries_out/u/.shifted_0', '/tfin_12/binaries_out/u/.shifted_0'], ['/tfin_4/binaries_out/u/.shifted_1', '/tfin_5/binaries_out/u/.shifted_1', '/tfin_6/binaries_out/u/.shifted_1', '/tfin_7/binaries_out/u/.shifted_1'], ['/tfin_8/binaries_out/u/.shifted_1', '/tfin_9/binaries_out/u/.shifted_1', '/tfin_10/binaries_out/u/.shifted_1', '/tfin_11/binaries_out/u/.shifted_1', '/tfin_12/binaries_out/u/.shifted_1'], ['/tfin_4/binaries_out/u/.shifted_2', '/tfin_5/binaries_out/u/.shifted_2', '/tfin_6/binaries_out/u/.shifted_2', '/tfin_7/binaries_out/u/.shifted_2'], ['/tfin_8/binaries_out/u/.shifted_2', '/tfin_9/binaries_out/u/.shifted_2', '/tfin_10/binaries_out/u/.shifted_2', '/tfin_11/binaries_out/u/.shifted_2', '/tfin_12/binaries_out/u/.shifted_2']]
+=========================================================== BEGINNING MODES EXTRACTION
+entering Fourier loop 1/12
+entering Fourier loop 2/12
+entering Fourier loop 3/12
+entering Fourier loop 4/12
+entering Fourier loop 5/12
+entering Fourier loop 6/12
+entering Fourier loop 7/12
+entering Fourier loop 8/12
+entering Fourier loop 9/12
+entering Fourier loop 10/12
+entering Fourier loop 11/12
+entering Fourier loop 12/12
+=========================================================== FINISHED MODES EXTRACTION

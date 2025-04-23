@@ -38,12 +38,21 @@ def main_extract_latents(par):
             write_job_output(par.path_to_job_output,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
             axis = list_axis[a]
+            if axis == 's' and mF == 0:
+                continue
             if par.rank == 0:
                 write_job_output(par.path_to_job_output,f'doing axis {axis}')
 
     ############### ==============================================================
     ############### Create correlation matrix
     ############### ==============================================================
+
+            if par.should_we_remove_mean_field:
+                if par.should_mean_field_computation_include_mesh_sym:
+                    char = 'mesh_sym'
+                else:
+                    char = 'no_mesh_sym'                    
+                par.mean_field = np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
 
             correlation = core_correlation_matrix_by_blocks(par,mF,axis,par.field_name_in_file,
                                                         for_building_symmetrized_weights=par.for_building_symmetrized_weights)

@@ -1,0 +1,99 @@
+
+Initialization done successfully
+The data will be gathered as follows:
+[['/tfin_9/binaries_out/u/'], ['/tfin_10/binaries_out/u/'], ['/tfin_11/binaries_out/u/']]
+=========================================================== BEGINNING COMPUTATION MEAN FIELD
+mean field already computed for mF = 0, axis c for mesh_sym
+mean field already computed for mF = 20, axis c for mesh_sym
+computing mean field for mF = 20, axis s for mesh_sym
+      Successfully imported ['/tfin_9/binaries_out/u/']
+      Successfully imported ['/tfin_10/binaries_out/u/']
+      Successfully imported ['/tfin_11/binaries_out/u/']
+computing mean field for mF = 40, axis c for mesh_sym
+      Successfully imported ['/tfin_9/binaries_out/u/']
+      Successfully imported ['/tfin_10/binaries_out/u/']
+      Successfully imported ['/tfin_11/binaries_out/u/']
+computing mean field for mF = 40, axis s for mesh_sym
+      Successfully imported ['/tfin_9/binaries_out/u/']
+      Successfully imported ['/tfin_10/binaries_out/u/']
+      Successfully imported ['/tfin_11/binaries_out/u/']
+computing mean field for mF = 60, axis c for mesh_sym
+      Successfully imported ['/tfin_9/binaries_out/u/']
+      Successfully imported ['/tfin_10/binaries_out/u/']
+      Successfully imported ['/tfin_11/binaries_out/u/']
+computing mean field for mF = 60, axis s for mesh_sym
+      Successfully imported ['/tfin_9/binaries_out/u/']
+      Successfully imported ['/tfin_10/binaries_out/u/']
+      Successfully imported ['/tfin_11/binaries_out/u/']
+=========================================================== FINISHED COMPUTATION MEAN FIELD
+=========================================================== BEGINNING LATENTS EXTRACTION
+entering Fourier loop 1/4
+doing axis c
+      In POD on Fourier => ['/tfin_9/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as right matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as left matrix
+<class 'numpy.ndarray'>,float32,Successfully reduced all in Meridian
+entering Fourier loop 2/4
+doing axis c
+      In POD on Fourier => ['/tfin_9/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as right matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as left matrix
+<class 'numpy.ndarray'>,float32,Successfully reduced all in Meridian
+doing axis s
+      In POD on Fourier => ['/tfin_9/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as right matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as left matrix
+<class 'numpy.ndarray'>,float32,Successfully reduced all in Meridian
+entering Fourier loop 3/4
+doing axis c
+      In POD on Fourier => ['/tfin_9/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as right matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as left matrix
+<class 'numpy.ndarray'>,float32,Successfully reduced all in Meridian
+doing axis s
+      In POD on Fourier => ['/tfin_9/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as right matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as left matrix
+<class 'numpy.ndarray'>,float32,Successfully reduced all in Meridian
+entering Fourier loop 4/4
+doing axis c
+      In POD on Fourier => ['/tfin_9/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as right matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as left matrix
+<class 'numpy.ndarray'>,float32,Successfully reduced all in Meridian
+doing axis s
+      In POD on Fourier => ['/tfin_9/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as right matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_10/binaries_out/u/'] imported as left matrix
+          In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as right matrix
+      In POD on Fourier => ['/tfin_11/binaries_out/u/'] imported as left matrix
+<class 'numpy.ndarray'>,float32,Successfully reduced all in Meridian
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+succesfully saved spectra for symetrized suites (phys POD)
+=========================================================== FINISHED LATENTS EXTRACTION
+=========================================================== BEGINNING MODES EXTRACTION
+entering Fourier loop 1/4
+entering Fourier loop 2/4
+entering Fourier loop 3/4
+entering Fourier loop 4/4
+=========================================================== FINISHED MODES EXTRACTION

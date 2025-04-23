@@ -41,6 +41,14 @@ def main_extract_modes(par):
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
             axis = list_axis[a]
             if (mF,axis) != (0,"s"):
+            #============== mean field if required
+                if par.should_we_remove_mean_field:
+                    if par.should_mean_field_computation_include_mesh_sym:
+                        char = 'mesh_sym'
+                    else:
+                        char = 'no_mesh_sym'                    
+                    par.mean_field = np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
+            #============== mean field if required
                 if axis == 'c':
                     fourier_type = 'cos'
                 elif axis == 's':
@@ -52,7 +60,8 @@ def main_extract_modes(par):
                     e_fourier = np.square(a_fourier).sum(-1)/Nt
                 for i,path_to_data in enumerate(par.paths_to_data):
                     new_data = import_data(par,mF,axis,path_to_data,par.field_name_in_file) #shape t a (d n) [with a being only shape 1]
-
+                    if par.should_we_remove_mean_field:
+                        new_data -= par.mean_field
                     if i == 0:
                         local_nb_snapshots,previous_nb_snapshots = new_data.shape[0],0
                         if par.should_we_save_Fourier_POD:
@@ -79,7 +88,7 @@ def main_extract_modes(par):
                                 sym_data *= (-1)
                         elif par.type_sym == 'centro':
                             for d in range(par.D):
-                                d_coeff = (1/2-(d == 2))*2 # this coeff has value +1 when d = 0 (so for component r) and -1 when d > 0 (so for components theta and z)
+                                d_coeff = (1/2-(d == 2))*2 # this coeff has value +1 when d = 0,1 (so for compo r & theta) and -1 when d = 2 (so for compo z)
                                 sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
                             sym_data *= (-1)**mF# factor -1 when performing centro-sym on even Fourier modes
                         sym_data = rearrange(sym_data,"t d n  -> t (d n)")

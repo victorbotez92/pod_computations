@@ -8,7 +8,7 @@ import numpy as np
 
 ########################################################################
 from read_data import global_parameters
-from compute_renormalizations import renormalization
+from compute_renormalizations import renormalization,build_mean_field
 from extract_latents import main_extract_latents
 from extract_modes import main_extract_modes
 from basic_functions import write_job_output,indiv_ranks,invert_rank
@@ -28,7 +28,7 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_save_phys_correlation','should_we_extract_latents','should_we_extract_modes',
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
-                'should_we_remove_mean_field','should_we_remove_custom_field']
+                'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym','should_we_remove_custom_field']
 list_chars = ['mesh_ext','path_to_mesh','directory_pairs','directory_codes','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym']
 list_several_chars = []
@@ -80,6 +80,8 @@ field = par.field
 is_the_field_to_be_renormalized_by_magnetic_energy = par.is_the_field_to_be_renormalized_by_magnetic_energy
 is_the_field_to_be_renormalized_by_its_L2_norm = par.is_the_field_to_be_renormalized_by_its_L2_norm
 renormalize = (is_the_field_to_be_renormalized_by_magnetic_energy or is_the_field_to_be_renormalized_by_its_L2_norm)
+
+mean_field = par.should_we_remove_mean_field
 
 should_we_add_mesh_symmetry = par.should_we_add_mesh_symmetry
 type_sym = par.type_sym
@@ -304,6 +306,20 @@ if renormalize:
             comm.send(None,dest=i)
     else:
         confirmation = comm.recv(source=0)
+
+########################################################################
+########################################################################
+################# Compute renormalization coefficients #################
+########################################################################
+########################################################################
+
+if mean_field:
+    if rank == 0:
+        write_job_output(path_to_job_output,"=========================================================== BEGINNING COMPUTATION MEAN FIELD")
+    build_mean_field(par, mesh_type, paths_to_data)
+    if rank == 0:
+        write_job_output(path_to_job_output,"=========================================================== FINISHED COMPUTATION MEAN FIELD")
+
 
 ########################################################################
 ########################################################################
