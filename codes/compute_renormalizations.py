@@ -86,10 +86,11 @@ def build_L2_renormalization(par, mesh_type):
 
 def build_mean_field(par, mesh_type, paths_to_data):
     for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier): # beginning calculations
-        if mF == 0:
-            list_axis = ["c"]
-        elif mF > 0:
-            list_axis = ["c","s"]
+        # if mF == 0:
+        #     list_axis = ["c"]
+        # elif mF > 0:
+        #     list_axis = ["c","s"]
+        list_axis = ["c","s"]
         for a in range(par.rank_axis,len(list_axis),par.nb_proc_in_axis):
             axis = list_axis[a]
             if par.should_mean_field_computation_include_mesh_sym:

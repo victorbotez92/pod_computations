@@ -38,8 +38,6 @@ def main_extract_latents(par):
             write_job_output(par.path_to_job_output,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
             axis = list_axis[a]
-            if axis == 's' and mF == 0:
-                continue
             if par.rank == 0:
                 write_job_output(par.path_to_job_output,f'doing axis {axis}')
 
@@ -71,14 +69,10 @@ def main_extract_latents(par):
     ############### Compute POD of Fourier components
     ############### ==============================================================
 
-            if par.should_we_save_Fourier_POD and par.rank_meridian == 0:
-        
-                pod_a = compute_POD_features(par,correlation)
-                save_pod(par,pod_a,is_it_phys_pod=False,mF=mF,fourier_type=axis)
-                del pod_a
-                gc.collect()
             
             if par.should_we_save_phys_POD:
+                if axis == 's' and mF == 0:
+                    correlation *= 0
                 if once_make_cor_for_phys:
                     once_make_cor_for_phys = False
                     if mF == 0:
@@ -90,8 +84,21 @@ def main_extract_latents(par):
                         cumulated_correlation += correlation
                     else:
                         cumulated_correlation += par.type_float(1/2)*correlation
+
+
+            if axis == 's' and mF == 0:
                 del correlation
                 gc.collect()
+                continue
+
+            if par.should_we_save_Fourier_POD and par.rank_meridian == 0:
+        
+                pod_a = compute_POD_features(par,correlation)
+                save_pod(par,pod_a,is_it_phys_pod=False,mF=mF,fourier_type=axis)
+                del pod_a
+                del correlation
+                gc.collect()
+
                 # if par.rank == 0:
                 #     write_job_output(par.path_to_job_output,f'{type(cumulated_correlation)},{cumulated_correlation.dtype}')
         # End for a,axis in ['c','s']

@@ -89,7 +89,11 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
                 N = [get_size(par.path_to_suites+path_to_data+f"/fourier_{field_name_in_file}c_S{s:04d}_F0000"+par.mesh_ext) for s in range(par.S) ]# get file size for fast import
             tab_snapshots_per_suites = [N[s]/size_mesh[s] for s in range(par.S)]
             for i in range(1,len(tab_snapshots_per_suites)):
-                assert tab_snapshots_per_suites[0] == tab_snapshots_per_suites[i]
+                try:
+                    assert tab_snapshots_per_suites[0] == tab_snapshots_per_suites[i]
+                except AssertionError:
+                    raise IndexError(f"In {raw_path_to_data}: entry files have different number of snapshots {tab_snapshots_per_suites[0]} != {tab_snapshots_per_suites[i]}")
+
             snapshots_per_suite = int(tab_snapshots_per_suites[0])
             new_data = get_data(par.path_to_suites+path_to_data,
             field_name_in_file,par.mesh_ext,mF,par.D,par.S,snapshots_per_suite,N,fourier_type=[axis],type_float = par.type_float)

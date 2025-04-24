@@ -1,0 +1,20 @@
+
+Initialization done successfully
+The data will be gathered as follows:
+[['/tfin_2/binaries_1/u', '/tfin_2/binaries_2/u'], ['/tfin_3/binaries_1/u', '/tfin_3/binaries_2/u'], ['/tfin_4/binaries_1/u', '/tfin_4/binaries_2/u']]
+=========================================================== BEGINNING COMPUTATION MEAN FIELD
+computing mean field for mF = 0, axis c for mesh_sym
+      Successfully imported ['/tfin_2/binaries_1/u', '/tfin_2/binaries_2/u']
+      Successfully imported ['/tfin_3/binaries_1/u', '/tfin_3/binaries_2/u']
+      Successfully imported ['/tfin_4/binaries_1/u', '/tfin_4/binaries_2/u']
+=========================================================== FINISHED COMPUTATION MEAN FIELD
+=========================================================== BEGINNING LATENTS EXTRACTION
+entering Fourier loop 1/1
+doing axis c
+      In POD on Fourier => ['/tfin_2/binaries_1/u', '/tfin_2/binaries_2/u'] imported as left matrix
+          In POD on Fourier => ['/tfin_3/binaries_1/u', '/tfin_3/binaries_2/u'] imported as right matrix
+          In POD on Fourier => ['/tfin_4/binaries_1/u', '/tfin_4/binaries_2/u'] imported as right matrix
+      In POD on Fourier => ['/tfin_3/binaries_1/u', '/tfin_3/binaries_2/u'] imported as left matrix
+          In POD on Fourier => ['/tfin_4/binaries_1/u', '/tfin_4/binaries_2/u'] imported as right matrix
+      In POD on Fourier => ['/tfin_4/binaries_1/u', '/tfin_4/binaries_2/u'] imported as left matrix
+<class 'numpy.ndarray'>,float64,Successfully reduced all in Meridian
