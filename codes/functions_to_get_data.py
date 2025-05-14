@@ -51,9 +51,18 @@ def apply_renormalization(par,data,path_to_data):
         renormalize_factor = 1
     return data[:,0]/renormalize_factor
 
+################################# IMPORTING MEAN FIELD
+
+def import_mean_field(par, mF, axis):
+    if par.should_mean_field_computation_include_mesh_sym:
+        char = 'mesh_sym'
+    else:
+        char = 'no_mesh_sym'                    
+    return np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
+
 ################################# MAIN FUNCTION
 
-def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renormalize=True): # the last parameter is set to False only when creating the normalization coefficients
+def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renormalize=True,building_mean_field=False): # the last parameter is set to False only when creating the normalization coefficients
     size_mesh = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
     ####################################################### IMPORTING SUCCESSIVELY ALL PATHS TO DEAL WITH AS ONE
     paths_to_data = []
@@ -108,8 +117,14 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
         if should_we_renormalize:
             new_data = apply_renormalization(par,new_data,path_to_data)
         if par.should_we_remove_custom_field:
-            new_data = new_data-par.fct_for_custom_field(mF,par.R,par.Z)[np.newaxis,:]
-
+            new_data -= par.fct_for_custom_field(mF,par.R,par.Z)[np.newaxis,:]
+        if par.should_we_remove_mean_field and not building_mean_field:
+            new_data -= import_mean_field(par, mF, axis)
+        # if par.should_we_remove_mean_field:
+        #     if not shift_component:
+        #         new_data -= par.mean_field
+        #     else:
+        #         new_data -= par.complementary_mean_field
         if num == 0:
             full_data = np.copy(new_data)
         else:

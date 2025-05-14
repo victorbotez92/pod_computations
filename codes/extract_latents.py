@@ -2,7 +2,7 @@
 # import sys
 # import os, array, time
 # import time
-import gc
+import gc, os
 # import struct
 # from mpi4py import MPI
 
@@ -45,13 +45,21 @@ def main_extract_latents(par):
     ############### Create correlation matrix
     ############### ==============================================================
 
-            if par.should_we_remove_mean_field:
-                if par.should_mean_field_computation_include_mesh_sym:
-                    char = 'mesh_sym'
-                else:
-                    char = 'no_mesh_sym'                    
-                par.mean_field = np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
-
+            # if par.should_we_remove_mean_field:
+            #     if par.should_mean_field_computation_include_mesh_sym:
+            #         char = 'mesh_sym'
+            #     else:
+            #         char = 'no_mesh_sym'                    
+            #     par.mean_field = np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
+# FIXING BUG ON MEAN-FIELD
+                # if mF != 0:
+                #     bool_exists = False
+                #     complementary_axis = list_axis[1-a]
+                #     while not bool_exists:
+                #         if os.path.exists(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{complementary_axis}.npy'):
+                #             par.complementary_mean_field = np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{complementary_axis}.npy')
+                #             bool_exists = True
+# FIXING BUG ON MEAN-FIELD
             correlation = core_correlation_matrix_by_blocks(par,mF,axis,par.field_name_in_file,
                                                         for_building_symmetrized_weights=par.for_building_symmetrized_weights)
             correlation = np.block(correlation)

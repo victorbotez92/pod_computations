@@ -96,23 +96,6 @@ directory_codes = par.directory_codes
 
 path_to_suites = par.path_to_suites
 
-########################################################################
-########################################################################
-# Create the list containing all paths + rotation symmetries
-########################################################################
-########################################################################
-
-if should_we_combine_with_shifted_data:
-    nb_paths_to_data = len(par.paths_to_data)
-    for n in range(len(shift_angle)):
-        for i in range(nb_paths_to_data):
-            new_shifts = []
-        ##### the ".shifted" can be interpreted within the function "import_data" of "functions_to_get_data"
-            local_nb_paths_to_data = len(par.paths_to_data[i])
-            for j in range(local_nb_paths_to_data):
-                new_shifts.append(par.paths_to_data[i][j]+f'.shifted_{n}')
-            par.paths_to_data.append(new_shifts.copy())
-
 paths_to_data = par.paths_to_data
 
 output_path = par.output_path
@@ -252,15 +235,12 @@ par.path_to_job_output = path_to_job_output
 
 os.system(f"touch {directory_codes + '/JobLogs_outputs'}")
 os.system(f"touch {path_to_job_output}")
-# os.makedirs(path_to_job_output)
 
 if rank == 0:
     with open(path_to_job_output,'w') as f:
         f.write('')
+# os.makedirs(path_to_job_output)
 
-    write_job_output(path_to_job_output,"Initialization done successfully")
-    write_job_output(path_to_job_output,"The data will be gathered as follows:")
-    write_job_output(path_to_job_output,str(par.paths_to_data))
 
 ########################################################################
 ########################################################################
@@ -300,16 +280,15 @@ if renormalize:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== BEGINNING RENORMALIZATION")
     renormalization(par,mesh_type)
+    if size != 1:
+        comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED RENORMALIZATION")
-        for i in range(1,size):
-            comm.send(None,dest=i)
-    else:
-        confirmation = comm.recv(source=0)
+
 
 ########################################################################
 ########################################################################
-################# Compute renormalization coefficients #################
+################# Compute mean-fields ##################################
 ########################################################################
 ########################################################################
 
@@ -317,9 +296,41 @@ if mean_field:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== BEGINNING COMPUTATION MEAN FIELD")
     build_mean_field(par, mesh_type, paths_to_data)
+    if size != 1:
+        comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED COMPUTATION MEAN FIELD")
 
+#######################################################################
+#######################################################################
+################# ADDING SHIFTS #######################################
+#######################################################################
+#######################################################################
+
+if should_we_combine_with_shifted_data:
+    nb_paths_to_data = len(par.paths_to_data)
+    for n in range(len(shift_angle)):
+        for i in range(nb_paths_to_data):
+            new_shifts = []
+        ##### the ".shifted" can be interpreted within the function "import_data" of "functions_to_get_data"
+            local_nb_paths_to_data = len(par.paths_to_data[i])
+            for j in range(local_nb_paths_to_data):
+                new_shifts.append(par.paths_to_data[i][j]+f'.shifted_{n}')
+            par.paths_to_data.append(new_shifts.copy())
+
+paths_to_data = par.paths_to_data
+
+#######################################################################
+#######################################################################
+#######################################################################
+#######################################################################
+#######################################################################
+
+if rank == 0:
+
+    write_job_output(path_to_job_output,"Initialization done successfully")
+    write_job_output(path_to_job_output,"The data will be gathered as follows:")
+    write_job_output(path_to_job_output,str(par.paths_to_data))
 
 ########################################################################
 ########################################################################
@@ -331,12 +342,11 @@ if should_we_extract_latents:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== BEGINNING LATENTS EXTRACTION")
     main_extract_latents(par)
+    if size != 1:
+        comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED LATENTS EXTRACTION")
-        for i in range(1,size):
-            comm.send(None,dest=i)
-    else:
-        confirmation = comm.recv(source=0)
+
 
 ########################################################################
 ########################################################################
@@ -348,6 +358,8 @@ if should_we_extract_modes:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== BEGINNING MODES EXTRACTION")
     main_extract_modes(par)
+    if size != 1:
+        comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED MODES EXTRACTION")
 
