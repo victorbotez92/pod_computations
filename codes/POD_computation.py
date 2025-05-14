@@ -32,7 +32,7 @@ def compute_POD_features(par,correlation):
 
     return computed_pod 
 
-def save_pod(par,pod_field,is_it_phys_pod=True,mF=None,fourier_type=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
+def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
         
     Energies=pod_field.eigvals
     latents=pod_field.proj_coeffs
@@ -75,10 +75,16 @@ def save_pod(par,pod_field,is_it_phys_pod=True,mF=None,fourier_type=None): #matr
             latents_not_sym = proj_coefficients[:len(proj_coefficients)//2,:len(proj_coefficients)//2]
             latents_sym = proj_coefficients[:len(proj_coefficients)//2,len(proj_coefficients)//2:]
             symmetry_of_latents = np.sign(np.sum(latents_not_sym*latents_sym,axis = 1)) #sum is performed over time at fixed nP
-            np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys.npy",symmetry_of_latents)
-
-        np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time).npy",latents)
-        np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys.npy',Energies)
+            if family is None:
+                np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys.npy",symmetry_of_latents)
+            else:
+                np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys_m{m}.npy",symmetry_of_latents)
+        if family is None:
+            np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time).npy",latents)
+            np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys.npy',Energies)
+        else:
+            np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time)_m{m}.npy",latents)
+            np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys_m{m}.npy',Energies)
 
 
 ############ MESH SYMMETRY FUNCTIONS (not working because data too big to be handled by numpy, in practice it is always written explicitly)

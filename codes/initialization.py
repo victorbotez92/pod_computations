@@ -19,7 +19,7 @@ data_file = sys.argv[1]
 ########################################################################
 ########################################################################
 
-list_ints = ['D','S','MF','nb_proc_in_fourier','nb_proc_in_axis','nb_proc_in_meridian','nb_bits']
+list_ints = ['D','S','MF','nb_proc_in_fourier','nb_proc_in_axis','nb_proc_in_meridian','nb_bits','number_shifts']
 list_several_ints = ['fourier_pod_modes_to_save','phys_pod_modes_to_save']
 list_floats = []
 list_several_floats = ['shift_angle']
@@ -87,7 +87,7 @@ should_we_add_mesh_symmetry = par.should_we_add_mesh_symmetry
 type_sym = par.type_sym
 should_we_combine_with_shifted_data = par.should_we_combine_with_shifted_data
 shift_angle = par.shift_angle
-
+number_shifts = par.number_shifts
 
 mesh_ext = par.mesh_ext
 path_to_mesh = par.path_to_mesh
@@ -95,58 +95,6 @@ directory_pairs = par.directory_pairs
 directory_codes = par.directory_codes
 
 path_to_suites = par.path_to_suites
-
-########################################################################
-########################################################################
-# Create the list containing all paths + rotation symmetries
-########################################################################
-########################################################################
-
-if should_we_combine_with_shifted_data:
-    nb_paths_to_data = len(par.paths_to_data)
-    for n in range(len(shift_angle)):
-        for i in range(nb_paths_to_data):
-            new_shifts = []
-        ##### the ".shifted" can be interpreted within the function "import_data" of "functions_to_get_data"
-            local_nb_paths_to_data = len(par.paths_to_data[i])
-            for j in range(local_nb_paths_to_data):
-                new_shifts.append(par.paths_to_data[i][j]+f'.shifted_{n}')
-            par.paths_to_data.append(new_shifts.copy())
-
-paths_to_data = par.paths_to_data
-
-output_path = par.output_path
-output_file_name = par.output_file_name
-
-
-########################################################################
-########################################################################
-# Mesh parameters + mesh symmetry pairs
-########################################################################
-########################################################################
-
-
-if field in list_vv_mesh:
-    mesh_type = 'vv'
-elif field in list_H_mesh:
-    mesh_type = 'H'
-
-par.mesh_type = mesh_type 
-
-
-assert (is_the_field_to_be_renormalized_by_its_L2_norm and is_the_field_to_be_renormalized_by_magnetic_energy) == False
-assert (field in list_vv_mesh) or (field in list_H_mesh)
-
-
-if should_we_add_mesh_symmetry:
-    pairs=f"list_pairs_{mesh_type}.npy"
-    list_pairs = np.load(directory_pairs+pairs)
-    tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
-    for elm in list_pairs:
-        index,sym_index = elm
-        tab_pairs[index] = int(sym_index)
-        tab_pairs[sym_index] = int(index)
-    par.tab_pairs = tab_pairs
 
 ########################################################################
 ########################################################################
@@ -191,6 +139,84 @@ if size > 1:
     gpe_meridian = comm.group.Incl(list(invert_rank(par.rank_fourier,par.rank_axis,new_rank_meridian,par) for new_rank_meridian in np.arange(par.nb_proc_in_meridian)))
     comm_meridian = comm.Create_group(gpe_meridian)
     par.comm_meridian = comm_meridian
+
+########################################################################
+########################################################################
+# Create the list containing all paths + rotation symmetries
+########################################################################
+########################################################################
+
+if should_we_combine_with_shifted_data and number_shifts>1:
+    raise Exception(ValueError, "can't have simultaneously 'should_we_combine_with_shifted_data' and 'number_shifts>1'")
+
+if should_we_combine_with_shifted_data:
+    nb_paths_to_data = len(par.paths_to_data)
+    for n in range(len(shift_angle)):
+        for i in range(nb_paths_to_data):
+            new_shifts = []
+        ##### the ".shifted" can be interpreted within the function "import_data" of "functions_to_get_data"
+            local_nb_paths_to_data = len(par.paths_to_data[i])
+            for j in range(local_nb_paths_to_data):
+                new_shifts.append(par.paths_to_data[i][j]+f'.shifted_{n}')
+            par.paths_to_data.append(new_shifts.copy())
+
+if number_shifts>1:
+    list_m_families = []
+    for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
+        new_family = []
+        cur_mF = mF
+        while cur_mF < par.MF:
+            new_family.append(cur_mF)
+            cur_mF += number_shifts
+        cur_mF = mF - number_shifts
+        while cur_mF > -par.MF:
+            new_family.append(np.abs(cur_mF))
+            cur_mF -= number_shifts
+
+        # get rid of repeated values
+        new_family = list(set(new_family))
+        # sort
+        new_family = np.sort(np.array(new_family))
+        list_m_families.append(np.copy(new_family))
+    par.list_m_families = list_m_families
+
+else:
+    par.list_m_families = [np.arange(par.MF)]
+
+paths_to_data = par.paths_to_data
+
+output_path = par.output_path
+output_file_name = par.output_file_name
+
+
+########################################################################
+########################################################################
+# Mesh parameters + mesh symmetry pairs
+########################################################################
+########################################################################
+
+
+if field in list_vv_mesh:
+    mesh_type = 'vv'
+elif field in list_H_mesh:
+    mesh_type = 'H'
+
+par.mesh_type = mesh_type 
+
+
+assert (is_the_field_to_be_renormalized_by_its_L2_norm and is_the_field_to_be_renormalized_by_magnetic_energy) == False
+assert (field in list_vv_mesh) or (field in list_H_mesh)
+
+
+if should_we_add_mesh_symmetry:
+    pairs=f"list_pairs_{mesh_type}.npy"
+    list_pairs = np.load(directory_pairs+pairs)
+    tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
+    for elm in list_pairs:
+        index,sym_index = elm
+        tab_pairs[index] = int(sym_index)
+        tab_pairs[sym_index] = int(index)
+    par.tab_pairs = tab_pairs
 
 ########################################################################
 ########################################################################

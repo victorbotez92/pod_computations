@@ -33,7 +33,16 @@ def main_extract_latents(par):
     #     nb_DR = int(field[3])
     #     magnetic_energies = energies[20*nb_DR+10,:]
 
+    if par.should_we_save_phys_POD:
+        list_correlations = [None for elm in par.list_m_families]
+
     for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
+        if par.should_we_save_phys_POD:
+            bool_found = False
+            index_correlation = 0
+            while not bool_found:
+                if mF in list_m_families[index_correlation]:
+                    bool_found = True
         if par.rank == 0:
             write_job_output(par.path_to_job_output,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
@@ -71,20 +80,33 @@ def main_extract_latents(par):
 
             
             if par.should_we_save_phys_POD:
+                # if axis == 's' and mF == 0:
+                #     correlation *= 0
+                # if once_make_cor_for_phys:
+                #     once_make_cor_for_phys = False
+                #     if mF == 0:
+                #         cumulated_correlation = np.copy(correlation)
+                #     else:
+                #         cumulated_correlation = par.type_float(1/2)*np.copy(correlation)
+                # else:
+                #     if mF == 0:
+                #         cumulated_correlation += correlation
+                #     else:
+                #         cumulated_correlation += par.type_float(1/2)*correlation
+
                 if axis == 's' and mF == 0:
                     correlation *= 0
                 if once_make_cor_for_phys:
                     once_make_cor_for_phys = False
                     if mF == 0:
-                        cumulated_correlation = np.copy(correlation)
+                        list_correlations[index_correlation] = np.copy(correlation)
                     else:
-                        cumulated_correlation = par.type_float(1/2)*np.copy(correlation)
+                        list_correlations[index_correlation] = par.type_float(1/2)*np.copy(correlation)
                 else:
                     if mF == 0:
-                        cumulated_correlation += correlation
+                        list_correlations[index_correlation] += correlation
                     else:
-                        cumulated_correlation += par.type_float(1/2)*correlation
-
+                        list_correlations[index_correlation] += par.type_float(1/2)*correlation
 
             if axis == 's' and mF == 0:
                 del correlation
@@ -104,7 +126,10 @@ def main_extract_latents(par):
         # End for a,axis in ['c','s']
     # End for mF in range(rank,MF,size)
     if par.should_we_save_phys_POD and par.rank_meridian == 0: #mpi_all_reduce on meridian already done above
-
+        for i,elm in enumerate(list_correlations):
+            if elm is None:
+                list_correlations[i] = 0*list_correlations[index_correlation]
+        list_correlations = np.array(list_correlations)
     ############### ==============================================================
     ############### Compute POD in physical space
     ############### ==============================================================
@@ -112,22 +137,27 @@ def main_extract_latents(par):
 
             ############### MPI_ALL_REDUCE on axis
         if par.size > 1:
-            cumulated_correlation = par.comm_axis.reduce(cumulated_correlation,root=0)
+            # cumulated_correlation = par.comm_axis.reduce(cumulated_correlation,root=0)
+            list_correlations = par.comm_axis.reduce(list_correlations,root=0)
             if par.rank == 0:
                 write_job_output(par.path_to_job_output,'Successfully reduced all in axis')
         if par.rank_axis == 0:
                 ############### MPI_ALL_REDUCE in Fourier
             if par.size > 1:
-                cumulated_correlation = par.comm_fourier.reduce(cumulated_correlation,root=0)
+                # cumulated_correlation = par.comm_fourier.reduce(cumulated_correlation,root=0)
+                list_correlations = par.comm_fourier.reduce(list_correlations,root=0)
                 if par.rank == 0:
                     write_job_output(par.path_to_job_output,'Successfully reduced all in Fourier')
             
-            if par.rank_fourier == 0:
+            for i,m_family in enumerate(list_m_families):
+                m = np.min(m_family)
+                if par.rank_fourier == 0:
+                    # pod_a = compute_POD_features(par,cumulated_correlation)
+                    pod_a = compute_POD_features(par,list_correlations[i])
+                    save_pod(par,pod_a,family=m)
+                    write_job_output(par.path_to_job_output,f'succesfully saved spectra for symetrized suites (phys POD) of family {m}')
 
-                pod_a = compute_POD_features(par,cumulated_correlation)
-                save_pod(par,pod_a)
-                write_job_output(par.path_to_job_output,f'succesfully saved spectra for symetrized suites (phys POD)')
-
-######################################## OPTIONAL SAVINGS
-                if par.should_we_save_phys_correlation:
-                    np.save(par.complete_output_path+'/'+par.output_file_name+'/phys_correlation.npy',cumulated_correlation)
+    ######################################## OPTIONAL SAVINGS
+                    if par.should_we_save_phys_correlation:
+                        # np.save(par.complete_output_path+'/'+par.output_file_name+f'/phys_correlation.npy',cumulated_correlation)
+                        np.save(par.complete_output_path+'/'+par.output_file_name+f'/phys_correlation_m{m}.npy',list_correlations[i])

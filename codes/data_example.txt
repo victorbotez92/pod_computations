@@ -96,6 +96,9 @@ True
 # !!!!! BEWARE FOR RPI SYM IS NOT VALID ANYMORE IF THE ANGLE IS NOT A MULTIPLE OF (2\pi)/8 (risk it messes up with the mF = 8 modes)
 # possible values : 0., 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875
 
+===number_shifts=== # This parameter is relevant for creating m-families
+8
+
 ###################### data manipulation before computing correlations
 #################################################
 #################################################
