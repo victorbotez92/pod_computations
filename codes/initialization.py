@@ -28,7 +28,8 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_save_phys_correlation','should_we_extract_latents','should_we_extract_modes',
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
-                'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym','should_we_remove_custom_field']
+                'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym','should_we_remove_custom_field',
+                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric']
 list_chars = ['mesh_ext','path_to_mesh','directory_pairs','directory_codes','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym']
 list_several_chars = []
@@ -84,6 +85,8 @@ renormalize = (is_the_field_to_be_renormalized_by_magnetic_energy or is_the_fiel
 mean_field = par.should_we_remove_mean_field
 
 should_we_add_mesh_symmetry = par.should_we_add_mesh_symmetry
+should_we_restrain_to_symmetric = par.should_we_restrain_to_symmetric
+should_we_restrain_to_antisymmetric = par.should_we_restrain_to_antisymmetric
 type_sym = par.type_sym
 should_we_combine_with_shifted_data = par.should_we_combine_with_shifted_data
 shift_angle = par.shift_angle
@@ -95,6 +98,42 @@ directory_pairs = par.directory_pairs
 directory_codes = par.directory_codes
 
 path_to_suites = par.path_to_suites
+
+paths_to_data = par.paths_to_data
+
+output_path = par.output_path
+output_file_name = par.output_file_name
+
+
+########################################################################
+########################################################################
+# Mesh parameters + mesh symmetry pairs
+########################################################################
+########################################################################
+
+
+if field in list_vv_mesh:
+    mesh_type = 'vv'
+elif field in list_H_mesh:
+    mesh_type = 'H'
+
+par.mesh_type = mesh_type 
+
+
+assert (is_the_field_to_be_renormalized_by_its_L2_norm and is_the_field_to_be_renormalized_by_magnetic_energy) == False
+assert (field in list_vv_mesh) or (field in list_H_mesh)
+assert not (par.should_we_restrain_to_symmetric and par.should_we_restrain_to_antisymmetric)
+assert not ((par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric) and par.should_we_add_mesh_symmetry)
+
+if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_restrain_to_antisymmetric:
+    pairs=f"list_pairs_{mesh_type}.npy"
+    list_pairs = np.load(directory_pairs+pairs)
+    tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
+    for elm in list_pairs:
+        index,sym_index = elm
+        tab_pairs[index] = int(sym_index)
+        tab_pairs[sym_index] = int(index)
+    par.tab_pairs = tab_pairs
 
 ########################################################################
 ########################################################################
@@ -229,7 +268,7 @@ Z = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext) for
 W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
 WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
 
-if should_we_add_mesh_symmetry:
+if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_restrain_to_antisymmetric:
     # ADAPT WHEN USING SEVERAL PROCS IN MERIDIAN
     if D == 3:
         if type_sym == 'Rpi':
@@ -278,15 +317,12 @@ par.path_to_job_output = path_to_job_output
 
 os.system(f"touch {directory_codes + '/JobLogs_outputs'}")
 os.system(f"touch {path_to_job_output}")
-# os.makedirs(path_to_job_output)
 
 if rank == 0:
     with open(path_to_job_output,'w') as f:
         f.write('')
+# os.makedirs(path_to_job_output)
 
-    write_job_output(path_to_job_output,"Initialization done successfully")
-    write_job_output(path_to_job_output,"The data will be gathered as follows:")
-    write_job_output(path_to_job_output,str(par.paths_to_data))
 
 ########################################################################
 ########################################################################
@@ -326,16 +362,15 @@ if renormalize:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== BEGINNING RENORMALIZATION")
     renormalization(par,mesh_type)
+    if size != 1:
+        comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED RENORMALIZATION")
-        for i in range(1,size):
-            comm.send(None,dest=i)
-    else:
-        confirmation = comm.recv(source=0)
+
 
 ########################################################################
 ########################################################################
-################# Compute renormalization coefficients #################
+################# Compute mean-fields ##################################
 ########################################################################
 ########################################################################
 
@@ -343,9 +378,41 @@ if mean_field:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== BEGINNING COMPUTATION MEAN FIELD")
     build_mean_field(par, mesh_type, paths_to_data)
+    if size != 1:
+        comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED COMPUTATION MEAN FIELD")
 
+#######################################################################
+#######################################################################
+################# ADDING SHIFTS #######################################
+#######################################################################
+#######################################################################
+
+if should_we_combine_with_shifted_data:
+    nb_paths_to_data = len(par.paths_to_data)
+    for n in range(len(shift_angle)):
+        for i in range(nb_paths_to_data):
+            new_shifts = []
+        ##### the ".shifted" can be interpreted within the function "import_data" of "functions_to_get_data"
+            local_nb_paths_to_data = len(par.paths_to_data[i])
+            for j in range(local_nb_paths_to_data):
+                new_shifts.append(par.paths_to_data[i][j]+f'.shifted_{n}')
+            par.paths_to_data.append(new_shifts.copy())
+
+paths_to_data = par.paths_to_data
+
+#######################################################################
+#######################################################################
+#######################################################################
+#######################################################################
+#######################################################################
+
+if rank == 0:
+
+    write_job_output(path_to_job_output,"Initialization done successfully")
+    write_job_output(path_to_job_output,"The data will be gathered as follows:")
+    write_job_output(path_to_job_output,str(par.paths_to_data))
 
 ########################################################################
 ########################################################################
@@ -357,12 +424,11 @@ if should_we_extract_latents:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== BEGINNING LATENTS EXTRACTION")
     main_extract_latents(par)
+    if size != 1:
+        comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED LATENTS EXTRACTION")
-        for i in range(1,size):
-            comm.send(None,dest=i)
-    else:
-        confirmation = comm.recv(source=0)
+
 
 ########################################################################
 ########################################################################
@@ -374,6 +440,8 @@ if should_we_extract_modes:
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== BEGINNING MODES EXTRACTION")
     main_extract_modes(par)
+    if size != 1:
+        comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED MODES EXTRACTION")
 

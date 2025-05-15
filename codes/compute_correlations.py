@@ -74,8 +74,10 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
     for i,path_to_data in enumerate(par.paths_to_data):
         first_matrix = import_data(par,mF,axis,path_to_data,field_name_in_file)
-        if par.should_we_remove_mean_field:
-            first_matrix -= par.mean_field
+# FIXING BUG ON MEAN-FIELD
+        # if par.should_we_remove_mean_field:
+        #     first_matrix -= par.mean_field
+# FIXING BUG ON MEAN-FIELD
         if par.rank == 0:
             write_job_output(par.path_to_job_output,f"      In POD on Fourier => {path_to_data} imported as left matrix")
             # write_job_output(par.path_to_job_output,f'left matrix of type {first_matrix.dtype}')
@@ -104,8 +106,10 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
         for j in range(i+1,nb_paths):
             second_matrix = import_data(par,mF,axis,par.paths_to_data[j],field_name_in_file) #shape t a (d n)
-            if par.should_we_remove_mean_field:
-                second_matrix -= par.mean_field
+# FIXING BUG ON MEAN-FIELD
+            # if par.should_we_remove_mean_field:
+            #     second_matrix -= par.mean_field
+# FIXING BUG ON MEAN-FIELD
             if par.rank == 0:
                 write_job_output(par.path_to_job_output,f"          In POD on Fourier => {par.paths_to_data[j]} imported as right matrix")
 
