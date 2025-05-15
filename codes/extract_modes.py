@@ -61,9 +61,8 @@ def main_extract_modes(par):
                 for i,path_to_data in enumerate(par.paths_to_data):
                     if par.rank == 0:
                         write_job_output(par.path_to_job_output,f'  Importing {path_to_data}')
-                    new_data = import_data(par,mF,axis,path_to_data,par.field_name_in_file) #shape t a (d n) [with a being only shape 1]
-                    # if par.should_we_remove_mean_field:
-                    #     new_data -= par.mean_field
+                    new_data = import_data(par,mF,axis,path_to_data,par.field_name_in_file) #shape t (d n) [with a being only shape 1]
+
                     if i == 0:
                         local_nb_snapshots,previous_nb_snapshots = new_data.shape[0],0
                         if par.should_we_save_Fourier_POD:

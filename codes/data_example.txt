@@ -84,6 +84,12 @@ False
 ===should_we_add_mesh_symmetry===
 True
 
+===should_we_restrain_to_symmetric===
+True
+
+===should_we_restrain_to_antisymmetric===
+True
+
 ===type_sym=== # can be Rpi (for Rpi-symmetry cf VK) or centro (for centro-symmetry cf Dresdyn)
 centro
 
