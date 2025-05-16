@@ -85,16 +85,16 @@ False
 True
 
 ===should_we_restrain_to_symmetric===
-True
+False
 
 ===should_we_restrain_to_antisymmetric===
-True
+False
 
 ===type_sym=== # can be Rpi (for Rpi-symmetry cf VK) or centro (for centro-symmetry cf Dresdyn)
 centro
 
 ===should_we_combine_with_shifted_data=== # True or False
-True
+False
 
 ===shift_angle=== # write a value between 0 and 1. The shift will be this value times 2\pi. Only relevant when option above set to True
 0.5
