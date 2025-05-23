@@ -33,7 +33,8 @@ def build_L2_renormalization(par, mesh_type):
             if not ('shifted' in path_to_data):
                 if not os.path.exists(par.path_to_suites+'/L2_norms/'+par.output_path+'/'+path_to_data.split('/')[0]+'.npy'): # the calculations are not made if it was already done before
                     once_create_array = False
-                    for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier): # beginning calculations
+                    for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
+                    # for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier): # beginning calculations
                         if par.rank == 0:
                             write_job_output(par.path_to_job_output,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
                         normalize_fourier = (mF == 0) + 1/2*(1-(mF == 0)) # 1/2 if mF > 0, 1 if mF = 0
@@ -85,7 +86,8 @@ def build_L2_renormalization(par, mesh_type):
 
 
 def build_mean_field(par, mesh_type, paths_to_data):
-    for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier): # beginning calculations
+    for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
+    # for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier): # beginning calculations
         # if mF == 0:
         #     list_axis = ["c"]
         # elif mF > 0:

@@ -1,0 +1,29 @@
+
+Initialization done successfully
+The data will be gathered as follows:
+[['/tfin_2/binaries_1/u'], ['/tfin_2/binaries_1/u.shifted_0']]
+=========================================================== BEGINNING LATENTS EXTRACTION
+entering Fourier loop 1/0
+doing axis c
+      In POD on Fourier => ['/tfin_2/binaries_1/u'] imported as left matrix
+          In POD on Fourier => ['/tfin_2/binaries_1/u.shifted_0'] imported as right matrix
+      In POD on Fourier => ['/tfin_2/binaries_1/u.shifted_0'] imported as left matrix
+<class 'numpy.ndarray'>,float64,Successfully reduced all in Meridian
+entering Fourier loop 1/0
+doing axis c
+      In POD on Fourier => ['/tfin_2/binaries_1/u'] imported as left matrix
+          In POD on Fourier => ['/tfin_2/binaries_1/u.shifted_0'] imported as right matrix
+      In POD on Fourier => ['/tfin_2/binaries_1/u.shifted_0'] imported as left matrix
+<class 'numpy.ndarray'>,float64,Successfully reduced all in Meridian
+Successfully reduced all in axis
+Successfully reduced all in Fourier
+succesfully saved spectra for symetrized suites (phys POD)
+=========================================================== FINISHED LATENTS EXTRACTION
+=========================================================== BEGINNING MODES EXTRACTION
+entering Fourier loop 1/0
+  Importing ['/tfin_2/binaries_1/u']
+  Importing ['/tfin_2/binaries_1/u.shifted_0']
+entering Fourier loop 1/0
+  Importing ['/tfin_2/binaries_1/u']
+  Importing ['/tfin_2/binaries_1/u.shifted_0']
+=========================================================== FINISHED MODES EXTRACTION

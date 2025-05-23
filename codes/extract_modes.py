@@ -33,10 +33,10 @@ def main_extract_modes(par):
         Nt = a_fourier.shape[-1]
         par.fourier_pod_modes_to_save = np.arange(Nt)
 
-
-    for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
+    for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
+    # for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
         if par.rank == 0:
-            write_job_output(par.path_to_job_output,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
+            write_job_output(par.path_to_job_output,f'entering Fourier loop {i//par.nb_proc_in_fourier+1}/{len(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier])//par.nb_proc_in_fourier}')
         list_axis = ["c","s"]
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
             axis = list_axis[a]

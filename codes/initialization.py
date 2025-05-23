@@ -20,7 +20,7 @@ data_file = sys.argv[1]
 ########################################################################
 
 list_ints = ['D','S','MF','nb_proc_in_fourier','nb_proc_in_axis','nb_proc_in_meridian','nb_bits']
-list_several_ints = ['fourier_pod_modes_to_save','phys_pod_modes_to_save']
+list_several_ints = ['fourier_pod_modes_to_save','phys_pod_modes_to_save','opt_mF']
 list_floats = []
 list_several_floats = ['shift_angle']
 list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_energy',
@@ -101,6 +101,19 @@ paths_to_data = par.paths_to_data
 output_path = par.output_path
 output_file_name = par.output_file_name
 
+
+########################################################################
+########################################################################
+# Defining list_modes
+########################################################################
+########################################################################
+
+if par.opt_mF[0] == -1:
+    list_modes = np.arange(par.MF)
+else:
+    list_modes = par.opt_mF
+
+par.list_modes = list_modes
 
 ########################################################################
 ########################################################################

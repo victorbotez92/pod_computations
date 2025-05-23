@@ -33,9 +33,10 @@ def main_extract_latents(par):
     #     nb_DR = int(field[3])
     #     magnetic_energies = energies[20*nb_DR+10,:]
 
-    for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
+    for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
+    # for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
         if par.rank == 0:
-            write_job_output(par.path_to_job_output,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
+            write_job_output(par.path_to_job_output,f'entering Fourier loop {i//par.nb_proc_in_fourier+1}/{len(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier])//par.nb_proc_in_fourier}')
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
             axis = list_axis[a]
             if par.rank == 0:
