@@ -75,13 +75,13 @@ def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=
             if family is None:
                 np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys.npy",symmetry_of_latents)
             else:
-                np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys_m{m}.npy",symmetry_of_latents)
+                np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys_m{family}.npy",symmetry_of_latents)
         if family is None:
             np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time).npy",latents)
             np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys.npy',Energies)
         else:
-            np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time)_m{m}.npy",latents)
-            np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys_m{m}.npy',Energies)
+            np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time)_m{family}.npy",latents)
+            np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys_m{family}.npy',Energies)
 
 
 ############ MESH SYMMETRY FUNCTIONS (not working because data too big to be handled by numpy, in practice it is always written explicitly)

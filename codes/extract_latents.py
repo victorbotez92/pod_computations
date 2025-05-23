@@ -33,16 +33,18 @@ def main_extract_latents(par):
     #     nb_DR = int(field[3])
     #     magnetic_energies = energies[20*nb_DR+10,:]
 
-    if par.should_we_save_phys_POD:
-        list_correlations = [None for elm in par.list_m_families]
+    # if par.should_we_save_phys_POD:
+    #     list_correlations = [None for elm in par.list_m_families]
 
     for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
         if par.should_we_save_phys_POD:
             bool_found = False
             index_correlation = 0
             while not bool_found:
-                if mF in list_m_families[index_correlation]:
+                if mF in par.list_m_families[index_correlation]:
                     bool_found = True
+                else:
+                    index_correlation += 1
         if par.rank == 0:
             write_job_output(par.path_to_job_output,f'entering Fourier loop {i//par.nb_proc_in_fourier+1}/{len(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier])//par.nb_proc_in_fourier}')
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
@@ -54,21 +56,6 @@ def main_extract_latents(par):
     ############### Create correlation matrix
     ############### ==============================================================
 
-            # if par.should_we_remove_mean_field:
-            #     if par.should_mean_field_computation_include_mesh_sym:
-            #         char = 'mesh_sym'
-            #     else:
-            #         char = 'no_mesh_sym'                    
-            #     par.mean_field = np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
-# FIXING BUG ON MEAN-FIELD
-                # if mF != 0:
-                #     bool_exists = False
-                #     complementary_axis = list_axis[1-a]
-                #     while not bool_exists:
-                #         if os.path.exists(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{complementary_axis}.npy'):
-                #             par.complementary_mean_field = np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{complementary_axis}.npy')
-                #             bool_exists = True
-# FIXING BUG ON MEAN-FIELD
             correlation = core_correlation_matrix_by_blocks(par,mF,axis,par.field_name_in_file,
                                                         for_building_symmetrized_weights=par.for_building_symmetrized_weights)
             correlation = np.block(correlation)
@@ -88,33 +75,25 @@ def main_extract_latents(par):
 
             
             if par.should_we_save_phys_POD:
-                # if axis == 's' and mF == 0:
-                #     correlation *= 0
+                if axis == 's' and mF == 0:
+                    correlation *= 0
+                if i == 0 and a == par.rank_axis:
+                    list_correlations = [np.zeros(correlation.shape) for elm in par.list_m_families]
                 # if once_make_cor_for_phys:
                 #     once_make_cor_for_phys = False
                 #     if mF == 0:
-                #         cumulated_correlation = np.copy(correlation)
+                #         list_correlations[index_correlation] = np.copy(correlation)
                 #     else:
-                #         cumulated_correlation = par.type_float(1/2)*np.copy(correlation)
+                #         list_correlations[index_correlation] = par.type_float(1/2)*np.copy(correlation)
                 # else:
                 #     if mF == 0:
-                #         cumulated_correlation += correlation
+                #         list_correlations[index_correlation] += correlation
                 #     else:
-                #         cumulated_correlation += par.type_float(1/2)*correlation
-
-                if axis == 's' and mF == 0:
-                    correlation *= 0
-                if once_make_cor_for_phys:
-                    once_make_cor_for_phys = False
-                    if mF == 0:
-                        list_correlations[index_correlation] = np.copy(correlation)
-                    else:
-                        list_correlations[index_correlation] = par.type_float(1/2)*np.copy(correlation)
+                #         list_correlations[index_correlation] += par.type_float(1/2)*correlation
+                if mF == 0:
+                    list_correlations[index_correlation] += correlation
                 else:
-                    if mF == 0:
-                        list_correlations[index_correlation] += correlation
-                    else:
-                        list_correlations[index_correlation] += par.type_float(1/2)*correlation
+                    list_correlations[index_correlation] += par.type_float(1/2)*correlation
 
             if axis == 's' and mF == 0:
                 del correlation
@@ -134,9 +113,9 @@ def main_extract_latents(par):
         # End for a,axis in ['c','s']
     # End for mF in range(rank,MF,size)
     if par.should_we_save_phys_POD and par.rank_meridian == 0: #mpi_all_reduce on meridian already done above
-        for i,elm in enumerate(list_correlations):
-            if elm is None:
-                list_correlations[i] = 0*list_correlations[index_correlation]
+        # for i,elm in enumerate(list_correlations):
+        #     if elm is None:
+        #         list_correlations[i] = 0*list_correlations[index_correlation]
         list_correlations = np.array(list_correlations)
     ############### ==============================================================
     ############### Compute POD in physical space
@@ -157,9 +136,12 @@ def main_extract_latents(par):
                 if par.rank == 0:
                     write_job_output(par.path_to_job_output,'Successfully reduced all in Fourier')
             
-            for i,m_family in enumerate(list_m_families):
+            for i,m_family in enumerate(par.list_m_families):
                 m = np.min(m_family)
+                # arg_m = np.argmin(np.abs(par.list_modes-m))
+                # rank_arg_m = invert_rank(rank_fourier,rank_axis,rank_meridian,par)
                 if par.rank_fourier == 0:
+                # if m in par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]:
                     # pod_a = compute_POD_features(par,cumulated_correlation)
                     pod_a = compute_POD_features(par,list_correlations[i])
                     save_pod(par,pod_a,family=m)

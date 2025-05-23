@@ -194,6 +194,27 @@ if size > 1:
 
 ########################################################################
 ########################################################################
+########################################################################
+########################################################################
+
+name_job_output = par.name_job_output
+
+complete_output_path = path_to_suites + '/' + output_path
+path_to_job_output = directory_codes + '/JobLogs_outputs/' + name_job_output
+
+par.complete_output_path = complete_output_path
+par.path_to_job_output = path_to_job_output
+
+os.system(f"touch {directory_codes + '/JobLogs_outputs'}")
+os.system(f"touch {path_to_job_output}")
+
+if rank == 0:
+    with open(path_to_job_output,'w') as f:
+        f.write('')
+# os.makedirs(path_to_job_output)
+
+########################################################################
+########################################################################
 # Create the list containing all paths + rotation symmetries
 ########################################################################
 ########################################################################
@@ -201,24 +222,30 @@ if size > 1:
 if should_we_combine_with_shifted_data and number_shifts>1:
     raise Exception(ValueError, "can't have simultaneously 'should_we_combine_with_shifted_data' and 'number_shifts>1'")
 
-if should_we_combine_with_shifted_data:
-    nb_paths_to_data = len(par.paths_to_data)
-    for n in range(len(shift_angle)):
-        for i in range(nb_paths_to_data):
-            new_shifts = []
-        ##### the ".shifted" can be interpreted within the function "import_data" of "functions_to_get_data"
-            local_nb_paths_to_data = len(par.paths_to_data[i])
-            for j in range(local_nb_paths_to_data):
-                new_shifts.append(par.paths_to_data[i][j]+f'.shifted_{n}')
-            par.paths_to_data.append(new_shifts.copy())
+#=======THIS IS DONE BELOW, AFTER HAVING COMPUTED MEAN-FIELDS
+
+# if should_we_combine_with_shifted_data:
+#     nb_paths_to_data = len(par.paths_to_data)
+#     for n in range(len(shift_angle)):
+#         for i in range(nb_paths_to_data):
+#             new_shifts = []
+#         ##### the ".shifted" can be interpreted within the function "import_data" of "functions_to_get_data"
+#             local_nb_paths_to_data = len(par.paths_to_data[i])
+#             for j in range(local_nb_paths_to_data):
+#                 new_shifts.append(par.paths_to_data[i][j]+f'.shifted_{n}')
+#             par.paths_to_data.append(new_shifts.copy())
 
 if number_shifts>1:
     list_m_families = []
-    for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
+    for i,mF in enumerate(par.list_modes):
+    # for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
+        if mF in np.array(list_m_families):
+            continue
         new_family = []
         cur_mF = mF
         while cur_mF < par.MF:
-            new_family.append(cur_mF)
+            if cur_mF in par.list_modes:
+                new_family.append(cur_mF)
             cur_mF += number_shifts
         cur_mF = mF - number_shifts
         while cur_mF > -par.MF:
@@ -233,7 +260,11 @@ if number_shifts>1:
     par.list_m_families = list_m_families
 
 else:
-    par.list_m_families = [np.arange(par.MF)]
+    list_m_families = [np.arange(par.MF)]
+    par.list_m_families = list_m_families
+
+if rank == 0:
+    write_job_output(path_to_job_output,f"list_families are {list_m_families}")
 
 paths_to_data = par.paths_to_data
 
@@ -315,26 +346,7 @@ par.for_building_symmetrized_weights = for_building_symmetrized_weights
 
 par.R = R
 par.Z = Z
-########################################################################
-########################################################################
-########################################################################
-########################################################################
 
-name_job_output = par.name_job_output
-
-complete_output_path = path_to_suites + '/' + output_path
-path_to_job_output = directory_codes + '/JobLogs_outputs/' + name_job_output
-
-par.complete_output_path = complete_output_path
-par.path_to_job_output = path_to_job_output
-
-os.system(f"touch {directory_codes + '/JobLogs_outputs'}")
-os.system(f"touch {path_to_job_output}")
-
-if rank == 0:
-    with open(path_to_job_output,'w') as f:
-        f.write('')
-# os.makedirs(path_to_job_output)
 
 
 ########################################################################
