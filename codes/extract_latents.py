@@ -36,7 +36,7 @@ def main_extract_latents(par):
     if par.should_we_save_phys_POD:
         list_correlations = [None for elm in par.list_m_families]
 
-    for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
+    for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
         if par.should_we_save_phys_POD:
             bool_found = False
             index_correlation = 0
@@ -44,7 +44,7 @@ def main_extract_latents(par):
                 if mF in list_m_families[index_correlation]:
                     bool_found = True
         if par.rank == 0:
-            write_job_output(par.path_to_job_output,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
+            write_job_output(par.path_to_job_output,f'entering Fourier loop {i//par.nb_proc_in_fourier+1}/{len(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier])//par.nb_proc_in_fourier}')
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
             axis = list_axis[a]
             if par.rank == 0:
