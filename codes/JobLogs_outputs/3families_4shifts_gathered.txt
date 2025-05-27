@@ -1,0 +1,11 @@
+
+Initialization done successfully
+The data will be gathered as follows:
+[['/tfin_2/binaries_1/u'], ['/tfin_2/binaries_1/u.shifted_0'], ['/tfin_2/binaries_1/u.shifted_1'], ['/tfin_2/binaries_1/u.shifted_2']]
+=========================================================== BEGINNING MODES EXTRACTION
+entering Fourier loop 1/1
+  Importing ['/tfin_2/binaries_1/u']
+  Importing ['/tfin_2/binaries_1/u.shifted_0']
+  Importing ['/tfin_2/binaries_1/u.shifted_1']
+  Importing ['/tfin_2/binaries_1/u.shifted_2']
+=========================================================== FINISHED MODES EXTRACTION
