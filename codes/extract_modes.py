@@ -20,24 +20,6 @@ def main_extract_modes(par):
     #     nb_DR = int(field[3])
     #     magnetic_energies = energies[20*nb_DR+10,:]
 
-
-    # if par.should_we_save_phys_POD:
-        # list_a_phys = []
-        # for new_family in list_m_families:
-        #     m = new_family.min
-        #     list_a_phys.append(np.load(par.complete_output_path+par.output_file_name+f"/a_phys_(mode_time)_m{m}.npy"))
-        # list_a_phys = np.array(list_a_phys)
-        # a_phys = np.load(par.complete_output_path+par.output_file_name+"/a_phys_(mode_time).npy") # signature n,T
-        # Nt = a_phys.shape[-1]
-        # if par.should_we_save_all_phys_pod_modes:
-            # par.phys_pod_modes_to_save = np.arange(Nt)
-        # list_a_phys = list_a_phys[:, par.phys_pod_modes_to_save]
-        # a_phys = a_phys[par.phys_pod_modes_to_save]
-        # list_e_phys = np.square(list_a_phys).sum(-1)/Nt
-        # e_phys = np.square(a_phys).sum(-1)/Nt
-        # list_phys_pod_modes = None
-
-
     if par.should_we_save_Fourier_POD and par.should_we_save_all_fourier_pod_modes:
         a_fourier = np.load(par.complete_output_path+par.output_file_name+f'/latents/cos_mF000.npy') # shape n,T
         Nt_F = a_fourier.shape[-1]
@@ -95,8 +77,6 @@ def main_extract_modes(par):
                     a_fourier = np.load(par.complete_output_path+par.output_file_name+f'/latents/{fourier_type}_mF{mF:03d}.npy') # shape n,T
                     a_fourier = a_fourier[par.fourier_pod_modes_to_save] # name badly chose, fourier_pod_modes_to_save is an array containing the labels of the POD modes to save for each individual mF
                     Nt_F = a_fourier.shape[-1]
-                    # if par.rank==0:
-                    #     write_job_output(par.path_to_job_output,f'{a_fourier.shape}')
                     e_fourier = np.square(a_fourier).sum(-1)/Nt_F
                 for i,path_to_data in enumerate(par.paths_to_data):
                     if par.rank == 0:
@@ -119,7 +99,7 @@ def main_extract_modes(par):
                         else:
                             coeff = 1*(axis=="c") - epsilon_correlations*(axis=='s')
                             phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,previous_nb_snapshots:local_nb_snapshots]@new_data
-                ############## Adding the symmetrized part when asked
+                    #============================================ Adding the symmetrized part when asked
                     if par.should_we_add_mesh_symmetry:
                         sym_data = rearrange(new_data,"t (d n) -> t d n",d=par.D)
                         del new_data
@@ -146,12 +126,12 @@ def main_extract_modes(par):
                                 phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
                         del sym_data
                         gc.collect()
-                ########################## Adding crossed correlations when necessary
+                    #================================================ Adding crossed correlations when necessary
                     if par.should_we_save_phys_POD and consider_crossed_correlations:
                         new_data = import_data(par,mF,counter_axis,path_to_data,par.field_name_in_file) #shape t (d n) [with a being only shape 1]
                         coeff = 1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
                         phys_pod_modes += coeff/(Nt_P*e_phys[1::2,None]) * a_phys[1::2,previous_nb_snapshots:local_nb_snapshots]@new_data
-                    ################################# Adding mesh symmetry in this case as well
+                        #===================================================== Adding mesh symmetry in this case as well
                         if par.should_we_add_mesh_symmetry:
                             sym_data = rearrange(new_data,"t (d n) -> t d n",d=par.D)
                             del new_data
@@ -173,7 +153,7 @@ def main_extract_modes(par):
                             del sym_data
                             gc.collect()
                     local_nb_snapshots,previous_nb_snapshots = local_nb_snapshots+T_new_data,local_nb_snapshots
-                # END FOR i,path in enumerate(list_paths)
+                # end for i,path in enumerate(list_paths)
                 if par.should_we_save_Fourier_POD:
                     for m_i in range(par.fourier_pod_modes_to_save.size):
                         nP=par.fourier_pod_modes_to_save[m_i]

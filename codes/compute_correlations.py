@@ -52,8 +52,6 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
     rows,columns,WEIGHTS,WEIGHTS_with_symmetry = for_building_symmetrized_weights
 
-    # if par.should_we_add_mesh_symmetry:
-
     sparse_WEIGHTS = csr_matrix((WEIGHTS,(np.arange(len(WEIGHTS)),np.arange(len(WEIGHTS))))) # Building a sparse diagonal matrix (required for fct compute_correlation)
 
 
@@ -83,7 +81,6 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 # FIXING BUG ON MEAN-FIELD
         if par.rank == 0:
             write_job_output(par.path_to_job_output,f"      In POD on Fourier => {path_to_data} imported as left matrix")
-            # write_job_output(par.path_to_job_output,f'left matrix of type {first_matrix.dtype}')
 
 ###################### ============================================================
 ###################### Computing auto-correlation
@@ -100,8 +97,6 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
         elif par.should_we_add_mesh_symmetry == False:
 
             list_blocs[i][i] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,type_float=par.type_float)
-        # if par.rank == 0:
-        #     write_job_output(par.path_to_job_output,f'new blocks of types {list_blocs[i][i].dtype}, {list_blocs[i][i+factor//2*nb_paths].dtype} and {list_blocs[i+nb_paths][i+factor//2*nb_paths].dtype}')
 
     ############### ==============================================================
     ############### importing matrix on right
@@ -163,17 +158,10 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
                     list_blocs_crossed[i][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
                     list_blocs_crossed[i+factor//2*nb_paths][j] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_left,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
                     list_blocs_crossed[i+factor//2*nb_paths][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right_and_left,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
-                    
-                    # list_blocs[j][i] = list_blocs[i][j].T
-                    # list_blocs[j+factor//2*nb_paths][i] = list_blocs[i][j+factor//2*nb_paths].T
-                    # list_blocs[j][i+factor//2*nb_paths] = list_blocs[i+factor//2*nb_paths][j].T
-                    # list_blocs[j+factor//2*nb_paths][i+factor//2*nb_paths] = list_blocs[i+factor//2*nb_paths][j+factor//2*nb_paths].T
 
                 elif par.should_we_add_mesh_symmetry == False:
 
                     list_blocs_crossed[i][j] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
-
-                    # list_blocs[j][i] = list_blocs[i][j].T
                 
             # end for j in [i,nb_paths]
     # end for i,path in paths

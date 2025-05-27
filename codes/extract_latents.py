@@ -33,9 +33,6 @@ def main_extract_latents(par):
     #     nb_DR = int(field[3])
     #     magnetic_energies = energies[20*nb_DR+10,:]
 
-    # if par.should_we_save_phys_POD:
-    #     list_correlations = [None for elm in par.list_m_families]
-
     for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
         if par.should_we_save_phys_POD:
             bool_found = False
@@ -173,10 +170,8 @@ def main_extract_latents(par):
                 all_eigvals = np.concatenate(all_eigvals)
                 sorting_indexes = np.argsort(all_eigvals)
                 all_eigvals = all_eigvals[sorting_indexes]
-                # write_job_output(par.path_to_job_output, f'{[pod.proj_coeffs.shape for pod in list_pod_a]}')
                 all_eigvecs = np.vstack([pod.proj_coeffs for pod in list_pod_a])[sorting_indexes, :]
                 all_symmetries = np.concatenate([pod.symmetries for pod in list_pod_a])[sorting_indexes]
-                # write_job_output(par.path_to_job_output, str(all_eigvecs.shape))
                 full_pod = POD(all_eigvals,all_eigvecs,all_symmetries)
                 save_pod(par,full_pod)
                 write_job_output(par.path_to_job_output,f'succesfully saved full spectra for symetrized suites (phys POD)')

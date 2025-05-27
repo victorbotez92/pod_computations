@@ -222,19 +222,6 @@ if rank == 0:
 if should_we_combine_with_shifted_data and number_shifts>1:
     raise Exception(ValueError, "can't have simultaneously 'should_we_combine_with_shifted_data' and 'number_shifts>1'")
 
-#=======THIS IS DONE BELOW, AFTER HAVING COMPUTED MEAN-FIELDS
-
-# if should_we_combine_with_shifted_data:
-#     nb_paths_to_data = len(par.paths_to_data)
-#     for n in range(len(shift_angle)):
-#         for i in range(nb_paths_to_data):
-#             new_shifts = []
-#         ##### the ".shifted" can be interpreted within the function "import_data" of "functions_to_get_data"
-#             local_nb_paths_to_data = len(par.paths_to_data[i])
-#             for j in range(local_nb_paths_to_data):
-#                 new_shifts.append(par.paths_to_data[i][j]+f'.shifted_{n}')
-#             par.paths_to_data.append(new_shifts.copy())
-
 if number_shifts>1:
     list_m_families = []
     for i,mF in enumerate(par.list_modes):
