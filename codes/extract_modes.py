@@ -97,7 +97,7 @@ def main_extract_modes(par):
                         if not consider_crossed_correlations:
                             phys_pod_modes += 1/(Nt_P*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots]@new_data
                         else:
-                            coeff = 1*(axis=="c") - epsilon_correlations*(axis=='s')
+                            coeff = 1*(axis=="c") + epsilon_correlations*(axis=='s')
                             phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,previous_nb_snapshots:local_nb_snapshots]@new_data
                     #============================================ Adding the symmetrized part when asked
                     if par.should_we_add_mesh_symmetry:
@@ -122,14 +122,14 @@ def main_extract_modes(par):
                             if not consider_crossed_correlations:
                                 phys_pod_modes += 1/(Nt_P*e_phys[:,None]) * a_phys[:,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
                             else:
-                                coeff = 1*(axis=="c") - epsilon_correlations*(axis=='s')
+                                coeff = 1*(axis=="c") + epsilon_correlations*(axis=='s')
                                 phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
                         del sym_data
                         gc.collect()
                     #================================================ Adding crossed correlations when necessary
                     if par.should_we_save_phys_POD and consider_crossed_correlations:
                         new_data = import_data(par,mF,counter_axis,path_to_data,par.field_name_in_file) #shape t (d n) [with a being only shape 1]
-                        coeff = 1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
+                        coeff = -1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
                         phys_pod_modes += coeff/(Nt_P*e_phys[1::2,None]) * a_phys[1::2,previous_nb_snapshots:local_nb_snapshots]@new_data
                         #===================================================== Adding mesh symmetry in this case as well
                         if par.should_we_add_mesh_symmetry:
@@ -148,7 +148,7 @@ def main_extract_modes(par):
                                     sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
                                 sym_data *= (-1)**mF# factor -1 when performing centro-sym on even Fourier modes
                             sym_data = rearrange(sym_data,"t d n  -> t (d n)")
-                            coeff = 1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
+                            coeff = -1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
                             phys_pod_modes += coeff/(Nt_P*e_phys[1::2,None]) * a_phys[1::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
                             del sym_data
                             gc.collect()
@@ -164,7 +164,7 @@ def main_extract_modes(par):
                         if not consider_crossed_correlations:
                             np.save(par.complete_output_path+par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i])
                         else:
-                            coeff = -1*(axis=='c') + 1*(axis=='s')
+                            coeff = +1*(axis=='c') - 1*(axis=='s')
                             np.save(par.complete_output_path+par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{2*nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i])
                             np.save(par.complete_output_path+par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{2*nP+1:03d}_mF_{mF:03d}_{counter_axis}",coeff*phys_pod_modes[m_i])
         # end for axis in [cos,sin]
