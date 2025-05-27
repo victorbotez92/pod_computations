@@ -239,7 +239,8 @@ if number_shifts>1:
     list_m_families = []
     for i,mF in enumerate(par.list_modes):
     # for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
-        if mF in np.array(list_m_families):
+        is_present = any(mF in m_family for m_family in list_m_families)
+        if is_present:
             continue
         new_family = []
         cur_mF = mF
@@ -257,14 +258,21 @@ if number_shifts>1:
         # sort
         new_family = np.sort(np.array(new_family))
         list_m_families.append(np.copy(new_family))
-    par.list_m_families = list_m_families
 
 else:
     list_m_families = [np.arange(par.MF)]
-    par.list_m_families = list_m_families
+    
+par.list_m_families = list_m_families
 
-if rank == 0:
-    write_job_output(path_to_job_output,f"list_families are {list_m_families}")
+if par.should_we_save_phys_POD and rank == 0:
+    for m_family in list_m_families:
+        m = m_family[0]
+        write_job_output(path_to_job_output,f"{m}-family is {m_family}")
+        if m == 0 or (m == par.number_shifts//2 and par.number_shifts%2 == 0):
+            write_job_output(par.path_to_job_output,f'      Not considering crossed correlation matrices for {m}-family')
+        else:
+            write_job_output(par.path_to_job_output,f'      Considering crossed correlation matrices for {m}-family')
+
 
 paths_to_data = par.paths_to_data
 
