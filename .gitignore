@@ -1,1 +1,4 @@
-codes/__pycache__
+JobLogs/
+JobLogs_outputs/
+job_launcher/
+codes/__pycache__/

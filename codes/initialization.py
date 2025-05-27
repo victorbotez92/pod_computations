@@ -19,8 +19,8 @@ data_file = sys.argv[1]
 ########################################################################
 ########################################################################
 
-list_ints = ['D','S','MF','nb_proc_in_fourier','nb_proc_in_axis','nb_proc_in_meridian','nb_bits']
-list_several_ints = ['fourier_pod_modes_to_save','phys_pod_modes_to_save']
+list_ints = ['D','S','MF','nb_proc_in_fourier','nb_proc_in_axis','nb_proc_in_meridian','nb_bits','number_shifts']
+list_several_ints = ['fourier_pod_modes_to_save','phys_pod_modes_to_save','opt_mF']
 list_floats = []
 list_several_floats = ['shift_angle']
 list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_energy',
@@ -28,7 +28,8 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_save_phys_correlation','should_we_extract_latents','should_we_extract_modes',
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
-                'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym','should_we_remove_custom_field']
+                'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym','should_we_remove_custom_field',
+                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric']
 list_chars = ['mesh_ext','path_to_mesh','directory_pairs','directory_codes','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym']
 list_several_chars = []
@@ -84,10 +85,12 @@ renormalize = (is_the_field_to_be_renormalized_by_magnetic_energy or is_the_fiel
 mean_field = par.should_we_remove_mean_field
 
 should_we_add_mesh_symmetry = par.should_we_add_mesh_symmetry
+should_we_restrain_to_symmetric = par.should_we_restrain_to_symmetric
+should_we_restrain_to_antisymmetric = par.should_we_restrain_to_antisymmetric
 type_sym = par.type_sym
 should_we_combine_with_shifted_data = par.should_we_combine_with_shifted_data
 shift_angle = par.shift_angle
-
+number_shifts = par.number_shifts
 
 mesh_ext = par.mesh_ext
 path_to_mesh = par.path_to_mesh
@@ -101,6 +104,19 @@ paths_to_data = par.paths_to_data
 output_path = par.output_path
 output_file_name = par.output_file_name
 
+
+########################################################################
+########################################################################
+# Defining list_modes
+########################################################################
+########################################################################
+
+if par.opt_mF[0] == -1:
+    list_modes = np.arange(par.MF)
+else:
+    list_modes = par.opt_mF
+
+par.list_modes = list_modes
 
 ########################################################################
 ########################################################################
@@ -119,9 +135,10 @@ par.mesh_type = mesh_type
 
 assert (is_the_field_to_be_renormalized_by_its_L2_norm and is_the_field_to_be_renormalized_by_magnetic_energy) == False
 assert (field in list_vv_mesh) or (field in list_H_mesh)
+assert not (par.should_we_restrain_to_symmetric and par.should_we_restrain_to_antisymmetric)
+assert not ((par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric) and par.should_we_add_mesh_symmetry)
 
-
-if should_we_add_mesh_symmetry:
+if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_restrain_to_antisymmetric:
     pairs=f"list_pairs_{mesh_type}.npy"
     list_pairs = np.load(directory_pairs+pairs)
     tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
@@ -177,6 +194,110 @@ if size > 1:
 
 ########################################################################
 ########################################################################
+########################################################################
+########################################################################
+
+name_job_output = par.name_job_output
+
+complete_output_path = path_to_suites + '/' + output_path
+path_to_job_output = directory_codes + '/JobLogs_outputs/' + name_job_output
+
+par.complete_output_path = complete_output_path
+par.path_to_job_output = path_to_job_output
+
+os.system(f"touch {directory_codes + '/JobLogs_outputs'}")
+os.system(f"touch {path_to_job_output}")
+
+if rank == 0:
+    with open(path_to_job_output,'w') as f:
+        f.write('')
+# os.makedirs(path_to_job_output)
+
+########################################################################
+########################################################################
+# Create the list containing all paths + rotation symmetries
+########################################################################
+########################################################################
+
+if should_we_combine_with_shifted_data and number_shifts>1:
+    raise Exception(ValueError, "can't have simultaneously 'should_we_combine_with_shifted_data' and 'number_shifts>1'")
+
+if number_shifts>1:
+    list_m_families = []
+    for i,mF in enumerate(par.list_modes):
+    # for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
+        is_present = any(mF in m_family for m_family in list_m_families)
+        if is_present:
+            continue
+        new_family = []
+        cur_mF = mF
+        while cur_mF < par.MF:
+            if cur_mF in par.list_modes:
+                new_family.append(cur_mF)
+            cur_mF += number_shifts
+        cur_mF = mF - number_shifts
+        while cur_mF > -par.MF:
+            new_family.append(np.abs(cur_mF))
+            cur_mF -= number_shifts
+
+        # get rid of repeated values
+        new_family = list(set(new_family))
+        # sort
+        new_family = np.sort(np.array(new_family))
+        list_m_families.append(np.copy(new_family))
+
+else:
+    list_m_families = [np.arange(par.MF)]
+    
+par.list_m_families = list_m_families
+
+if par.should_we_save_phys_POD and rank == 0:
+    for m_family in list_m_families:
+        m = m_family[0]
+        write_job_output(path_to_job_output,f"{m}-family is {m_family}")
+        if m == 0 or (m == par.number_shifts//2 and par.number_shifts%2 == 0):
+            write_job_output(par.path_to_job_output,f'      Not considering crossed correlation matrices for {m}-family')
+        else:
+            write_job_output(par.path_to_job_output,f'      Considering crossed correlation matrices for {m}-family')
+
+
+paths_to_data = par.paths_to_data
+
+output_path = par.output_path
+output_file_name = par.output_file_name
+
+
+########################################################################
+########################################################################
+# Mesh parameters + mesh symmetry pairs
+########################################################################
+########################################################################
+
+
+if field in list_vv_mesh:
+    mesh_type = 'vv'
+elif field in list_H_mesh:
+    mesh_type = 'H'
+
+par.mesh_type = mesh_type 
+
+
+assert (is_the_field_to_be_renormalized_by_its_L2_norm and is_the_field_to_be_renormalized_by_magnetic_energy) == False
+assert (field in list_vv_mesh) or (field in list_H_mesh)
+
+
+if should_we_add_mesh_symmetry:
+    pairs=f"list_pairs_{mesh_type}.npy"
+    list_pairs = np.load(directory_pairs+pairs)
+    tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
+    for elm in list_pairs:
+        index,sym_index = elm
+        tab_pairs[index] = int(sym_index)
+        tab_pairs[sym_index] = int(index)
+    par.tab_pairs = tab_pairs
+
+########################################################################
+########################################################################
 # Build the necessary sparse matrices if introducing mesh symmetry
 ########################################################################
 ########################################################################
@@ -186,7 +307,7 @@ Z = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext) for
 W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
 WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
 
-if should_we_add_mesh_symmetry:
+if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_restrain_to_antisymmetric:
     # ADAPT WHEN USING SEVERAL PROCS IN MERIDIAN
     if D == 3:
         if type_sym == 'Rpi':
@@ -220,26 +341,7 @@ par.for_building_symmetrized_weights = for_building_symmetrized_weights
 
 par.R = R
 par.Z = Z
-########################################################################
-########################################################################
-########################################################################
-########################################################################
 
-name_job_output = par.name_job_output
-
-complete_output_path = path_to_suites + '/' + output_path
-path_to_job_output = directory_codes + '/JobLogs_outputs/' + name_job_output
-
-par.complete_output_path = complete_output_path
-par.path_to_job_output = path_to_job_output
-
-os.system(f"touch {directory_codes + '/JobLogs_outputs'}")
-os.system(f"touch {path_to_job_output}")
-
-if rank == 0:
-    with open(path_to_job_output,'w') as f:
-        f.write('')
-# os.makedirs(path_to_job_output)
 
 
 ########################################################################

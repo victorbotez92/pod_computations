@@ -1,0 +1,5 @@
+
+Initialization done successfully
+The data will be gathered as follows:
+[['/tfin_2/binaries_1/u']]
+=========================================================== BEGINNING LATENTS EXTRACTION

@@ -39,6 +39,9 @@ u
 ===MF=== #number of Fourier modes
 64
 
+===opt_mF=== # write the list of Fourier modes to consider for POD (leave to -1 to set to np.arange(MF))
+1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63
+
 ===should_we_save_Fourier_POD===
 True
 
@@ -84,17 +87,26 @@ False
 ===should_we_add_mesh_symmetry===
 True
 
+===should_we_restrain_to_symmetric===
+False
+
+===should_we_restrain_to_antisymmetric===
+False
+
 ===type_sym=== # can be Rpi (for Rpi-symmetry cf VK) or centro (for centro-symmetry cf Dresdyn)
 centro
 
 ===should_we_combine_with_shifted_data=== # True or False
-True
+False
 
 ===shift_angle=== # write a value between 0 and 1. The shift will be this value times 2\pi. Only relevant when option above set to True
 0.5
 
 # !!!!! BEWARE FOR RPI SYM IS NOT VALID ANYMORE IF THE ANGLE IS NOT A MULTIPLE OF (2\pi)/8 (risk it messes up with the mF = 8 modes)
 # possible values : 0., 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875
+
+===number_shifts=== # This parameter is relevant for creating m-families
+8
 
 ###################### data manipulation before computing correlations
 #################################################

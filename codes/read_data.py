@@ -75,7 +75,6 @@ list_chars,list_several_chars,list_several_list_chars,list_fcts):
                 if new_name == "fct_for_custom_field":
                     new_param = raw_lines[i+1].split('\n')[0]
                     new_param = new_param.split(',')[0]
-                    print(new_param)
 
                     fct_for_custom_field = globals()[new_param]
                     # globals()[new_name] = globals()[new_param]
