@@ -155,7 +155,7 @@ def main_extract_latents(par):
                         else:
                             epsilon_correlations = -1
 
-                    pod_a = compute_POD_features(par,list_correlations[i],family=m,consider_crossed_correlations=consider_crossed_correlations)
+                    pod_a = compute_POD_features(par,1/2*(list_correlations[i]+np.conjugate(list_correlations[i].T)),family=m,consider_crossed_correlations=consider_crossed_correlations)
                     list_pod_a.append(pod_a)
                     # if par.number_shifts > 1:
                     save_pod(par,pod_a,family=m)

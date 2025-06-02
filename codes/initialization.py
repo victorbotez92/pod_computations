@@ -432,7 +432,8 @@ if rank == 0:
 
     write_job_output(path_to_job_output,"Initialization done successfully")
     write_job_output(path_to_job_output,"The data will be gathered as follows:")
-    write_job_output(path_to_job_output,str(par.paths_to_data))
+    for individual_path_to_data in par.paths_to_data:
+        write_job_output(path_to_job_output,f'  {individual_path_to_data}')
 
 ########################################################################
 ########################################################################

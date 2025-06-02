@@ -117,6 +117,8 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
             if par.should_we_add_mesh_symmetry == True:
 
+                coeff = -1*(par.type_sym=='Rpi') + 1*(par.type_sym=='centro')
+
                 list_blocs[i][j] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
 
                 list_blocs[i][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
@@ -155,9 +157,9 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
                     list_blocs_crossed[i][j] = compute_correlation(first_matrix.T,give_weights=True,weights = sparse_WEIGHTS,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
 
-                    list_blocs_crossed[i][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
+                    list_blocs_crossed[i][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = coeff*weight_sym_on_right,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
                     list_blocs_crossed[i+factor//2*nb_paths][j] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_left,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
-                    list_blocs_crossed[i+factor//2*nb_paths][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = weight_sym_on_right_and_left,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
+                    list_blocs_crossed[i+factor//2*nb_paths][j+factor//2*nb_paths] = compute_correlation(first_matrix.T,give_weights=True,weights = coeff*weight_sym_on_right_and_left,with_itself = False,second_matrix = second_matrix.T,type_float=par.type_float)
 
                 elif par.should_we_add_mesh_symmetry == False:
 

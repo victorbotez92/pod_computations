@@ -44,7 +44,8 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
             eigenvectors = full_eigenvectors.real
         del full_eigenvectors
         gc.collect()
-    eigvals = np.abs(eigenvalues[::-1])  # this is good (same signature as code on ruche + the test went well)
+    eigvals = eigenvalues[::-1]
+    # eigvals = np.abs(eigenvalues[::-1])  # this is good (same signature as code on ruche + the test went well)
     eigenvectors = eigenvectors/(np.sum(eigenvectors**2, axis = 0).reshape(1, eigvals.shape[0]))
     proj_coeffs = (np.sqrt(Nt_float*(eigvals[:,np.newaxis]).T)*eigenvectors[:,::-1]).T
     # if par.rank == 0:
