@@ -222,7 +222,6 @@ def main_extract_modes(par):
                         nP=par.fourier_pod_modes_to_save[m_i]
                         np.save(par.complete_output_path+par.output_file_name+f"/fourier_pod_modes/mF_{mF:03d}_nP_{nP:03d}_{axis}",fourier_pod_modes[m_i])
                 if par.should_we_save_phys_POD:
-                    print(par.phys_pod_modes_to_save)
                     for m_i, nP in enumerate(par.phys_pod_modes_to_save):
                         # nP=par.phys_pod_modes_to_save[m_i]
                         if not consider_crossed_correlations:

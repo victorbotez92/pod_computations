@@ -108,21 +108,16 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
             field_name_in_file,par.mesh_ext,mF,par.D,par.S,snapshots_per_suite,N,axis,type_float = par.type_float)
             new_data = rearrange(new_data,"t d n -> t (d n) ")
 
-            # print(0,np.shape(new_data))
         ############################ APPLYING THE TRANSFORMATIONS THAT ARE REQUIRED
-        # print(1,np.shape(new_data))
 
         if should_we_renormalize and par.is_the_field_to_be_renormalized_by_its_L2_norm:
             new_data = apply_renormalization(par,new_data,path_to_data)
-            # print(2,np.shape(new_data))
 
         if par.should_we_remove_custom_field:
             new_data -= par.fct_for_custom_field(mF,par.R,par.Z)[np.newaxis,:]
-            # print(3,np.shape(new_data))
 
         if par.should_we_remove_mean_field and not building_mean_field:
             new_data -= import_mean_field(par, mF, axis)
-            # print(4,np.shape(new_data))
 
         if par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric:
             new_data = rearrange(new_data,"t (d n) -> t d n", d=3)

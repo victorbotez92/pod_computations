@@ -26,34 +26,36 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
     del correlation 
     gc.collect()
 
-    if par.number_shifts>1 and consider_crossed_correlations and not (family is None):
-        # if consider_crossed_correlations:
-        if par.should_we_add_mesh_symmetry:
-            if par.type_sym == 'Rpi': #these calculations artificially create symmetric/antisymmetric latents (Cf overleaf)
-                sym_vect = (eigenvectors[:Nt_int//2,:] + eigenvectors[Nt_int//2:,:])/2
-                normalization_sym = np.mean(sym_vect.real/sym_vect.imag,axis=0)
-                del sym_vect
-                gc.collect()
-                anti_vect = (eigenvectors[:Nt_int//2,:] - eigenvectors[Nt_int//2:,:])/2
-                normalization_anti = np.mean(anti_vect.real/anti_vect.imag,axis=0)
-                del anti_vect
-                gc.collect()
-                assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real < 1e-4) == 1
-                eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
-                eigenvectors /= np.reshape((np.abs(eigenvectors)).sum(0),(1, Nt_int))   #renormalize eigenvectors
+    if par.number_shifts>1 and not (family is None):
         full_eigenvectors = np.empty((par.number_shifts*eigenvalues.shape[0], eigenvalues.shape[0]), dtype=np.complex128)
+        if consider_crossed_correlations:
+            if par.should_we_add_mesh_symmetry:
+                if par.type_sym == 'Rpi': #these calculations artificially create symmetric/antisymmetric latents (Cf overleaf)
+                    sym_vect = (eigenvectors[:Nt_int//2,:] + eigenvectors[Nt_int//2:,:])/2
+                    normalization_sym = np.mean(sym_vect.real/sym_vect.imag,axis=0)
+                    del sym_vect
+                    gc.collect()
+                    anti_vect = (eigenvectors[:Nt_int//2,:] - eigenvectors[Nt_int//2:,:])/2
+                    normalization_anti = np.mean(anti_vect.real/anti_vect.imag,axis=0)
+                    del anti_vect
+                    gc.collect()
+                    assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real < 1e-4) == 1
+                    eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
+                    eigenvectors /= np.reshape((np.abs(eigenvectors)).sum(0),(1, Nt_int))   #renormalize eigenvectors
     # full_eigenvectors[:Nt, :] = eigenvectors
         for m in range(par.number_shifts):
             full_eigenvectors[m*Nt_int:(m+1)*Nt_int, :] = np.exp(-2*1.j*np.pi*family/par.number_shifts*m)*eigenvectors
-    # if consider_crossed_correlations:
-        real_part = full_eigenvectors.real
-        imag_part = full_eigenvectors.imag
-        eigenvectors = np.empty((full_eigenvectors.shape[0], 2*full_eigenvectors.shape[1]))
-        eigenvectors[:, 0::2] = real_part
-        eigenvectors[:, 1::2] = imag_part
-        eigenvalues = np.repeat(eigenvalues, 2)
-        del real_part, imag_part
-        gc.collect()
+        if consider_crossed_correlations:
+            real_part = full_eigenvectors.real
+            imag_part = full_eigenvectors.imag
+            eigenvectors = np.empty((full_eigenvectors.shape[0], 2*full_eigenvectors.shape[1]))
+            eigenvectors[:, 0::2] = real_part
+            eigenvectors[:, 1::2] = imag_part
+            eigenvalues = np.repeat(eigenvalues, 2)
+            del real_part, imag_part
+            gc.collect()
+        else:
+            eigenvectors = full_eigenvectors.real
     # else:
     #     eigenvectors = full_eigenvectors.real
         del full_eigenvectors
