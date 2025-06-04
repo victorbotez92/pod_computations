@@ -95,7 +95,7 @@ def main_extract_latents(par):
                 if axis == 's' and mF == 0:
                     correlation *= 0
                 if i == 0 and a == par.rank_axis:
-                    list_correlations = [np.zeros(correlation.shape, dtype=np.complex128) for elm in par.list_m_families]
+                    list_correlations = [np.zeros(correlation.shape, dtype=np.complex128) for _ in par.list_m_families]
 
                 if mF == 0:
                     list_correlations[index_correlation] += correlation

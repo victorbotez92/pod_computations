@@ -119,59 +119,102 @@ def main_extract_modes(par):
                             else:
                                 coeff = 1*(axis=="c") + epsilon_correlations*(axis=='s')
                                 phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,previous_nb_snapshots:local_nb_snapshots]@new_data
-                        #============================================ Adding the symmetrized part when asked
-                        if par.should_we_add_mesh_symmetry:
-                            sym_data = rearrange(new_data,"t (d n) -> t d n",d=par.D)
-                            del new_data
-                            gc.collect()
-                            if par.type_sym == 'Rpi':
-                                for d in range(par.D):
-                                    d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
-                                    sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
-                                if axis == 's':  # factor -1 when performing rpi-sym on sine components
-                                    sym_data *= (-1)
-                            elif par.type_sym == 'centro':
-                                for d in range(par.D):
-                                    d_coeff = (1/2-(d == 2))*2 # this coeff has value +1 when d = 0,1 (so for compo r & theta) and -1 when d = 2 (so for compo z)
-                                    sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
-                                sym_data *= (-1)**mF# factor -1 when performing centro-sym on even Fourier modes
-                            sym_data = rearrange(sym_data,"t d n  -> t (d n)")
-                            if par.should_we_save_Fourier_POD:
-                                fourier_pod_modes += 1/(Nt_F*e_fourier[:,None]) * a_fourier[:,Nt_F//2+previous_nb_snapshots:Nt_F//2+local_nb_snapshots]@sym_data
-                            if par.should_we_save_phys_POD:
-                                if not consider_crossed_correlations:
-                                    phys_pod_modes += 1/(Nt_P*e_phys[:,None]) * a_phys[:,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
-                                else:
-                                    coeff = 1*(axis=="c") + epsilon_correlations*(axis=='s')
-                                    phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
-                            del sym_data
-                            gc.collect()
+                        # #============================================ Adding the symmetrized part when asked
+                        # if par.should_we_add_mesh_symmetry:
+                        #     sym_data = rearrange(new_data,"t (d n) -> t d n",d=par.D)
+                        #     del new_data
+                        #     gc.collect()
+                        #     if par.type_sym == 'Rpi':
+                        #         for d in range(par.D):
+                        #             d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
+                        #             sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
+                        #         if axis == 's':  # factor -1 when performing rpi-sym on sine components
+                        #             sym_data *= (-1)
+                        #     elif par.type_sym == 'centro':
+                        #         for d in range(par.D):
+                        #             d_coeff = (1/2-(d == 2))*2 # this coeff has value +1 when d = 0,1 (so for compo r & theta) and -1 when d = 2 (so for compo z)
+                        #             sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
+                        #         sym_data *= (-1)**mF# factor -1 when performing centro-sym on even Fourier modes
+                        #     sym_data = rearrange(sym_data,"t d n  -> t (d n)")
+                        #     if par.should_we_save_Fourier_POD:
+                        #         fourier_pod_modes += 1/(Nt_F*e_fourier[:,None]) * a_fourier[:,Nt_F//2+previous_nb_snapshots:Nt_F//2+local_nb_snapshots]@sym_data
+                        #     if par.should_we_save_phys_POD:
+                        #         if not consider_crossed_correlations:
+                        #             phys_pod_modes += 1/(Nt_P*e_phys[:,None]) * a_phys[:,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
+                        #         else:
+                        #             coeff = 1*(axis=="c") + epsilon_correlations*(axis=='s')
+                        #             phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
+                        #     del sym_data
+                        #     gc.collect()
                         #================================================ Adding crossed correlations when necessary
                         if par.should_we_save_phys_POD and consider_crossed_correlations:
                             new_data = import_data(par,mF,counter_axis,[individual_path_to_data],par.field_name_in_file) #shape t (d n) [with a being only shape 1]
                             coeff = -1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
                             phys_pod_modes += coeff/(Nt_P*e_phys[1::2,None]) * a_phys[1::2,previous_nb_snapshots:local_nb_snapshots]@new_data
-                            #===================================================== Adding mesh symmetry in this case as well
-                            if par.should_we_add_mesh_symmetry:
-                                sym_data = rearrange(new_data,"t (d n) -> t d n",d=par.D)
-                                del new_data
+
+
+                        #============================================ Adding the symmetrized part when asked
+                        if par.should_we_add_mesh_symmetry:
+                            if par.type_sym == 'Rpi':
+                                sym_tensor = np.array([1, -1, -1])
+                            elif par.type_sym == 'centro':
+                                sym_tensor = np.array([1, 1, -1])
+                            # sym_tensor = np.repeat(sym_tensor, len(par.R)).reshape(1, par.D*len(par.R))
+
+                            if par.should_we_save_Fourier_POD:
+                                epsilon_symmetry = np.sign((a_fourier[:,previous_nb_snapshots:local_nb_snapshots]*a_fourier[:,Nt_F//2+previous_nb_snapshots:Nt_F//2+local_nb_snapshots]).sum(-1))
+                                epsilon_symmetry = epsilon_symmetry.reshape(epsilon_symmetry.shape[0], 1)
+                                sym_coeff = (par.type_sym=='centro')*(-1)**mF + (par.type_sym=='Rpi')*(-1)**(axis=='s')
+                                fourier_pod_modes = rearrange(fourier_pod_modes,"t (d n) -> t d n",d=par.D)
+                                symmetrized_fourier = np.empty(fourier_pod_modes.shape)
+                                for d in range(par.D):
+                                    symmetrized_fourier[:, d, :] = sym_coeff*sym_tensor[d]*fourier_pod_modes[:, d, par.tab_pairs]
+                                fourier_pod_modes = rearrange(fourier_pod_modes,"t d n -> t (d n)")
+                                symmetrized_fourier = rearrange(symmetrized_fourier,"t d n -> t (d n)")
+                                fourier_pod_modes += epsilon_symmetry*symmetrized_fourier
+                                del symmetrized_fourier
                                 gc.collect()
-                                if par.type_sym == 'Rpi':
-                                    for d in range(par.D):
-                                        d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
-                                        sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
-                                    if counter_axis == 's':  # factor -1 when performing rpi-sym on sine components
-                                        sym_data *= (-1)
-                                elif par.type_sym == 'centro':
-                                    for d in range(par.D):
-                                        d_coeff = (1/2-(d == 2))*2 # this coeff has value +1 when d = 0,1 (so for compo r & theta) and -1 when d = 2 (so for compo z)
-                                        sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
-                                    sym_data *= (-1)**mF# factor -1 when performing centro-sym on even Fourier modes
-                                sym_data = rearrange(sym_data,"t d n  -> t (d n)")
-                                coeff = -1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
-                                phys_pod_modes += coeff/(Nt_P*e_phys[1::2,None]) * a_phys[1::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
-                                del sym_data
+
+                            if par.should_we_save_phys_POD:
+                                if consider_crossed_correlations:
+                                    epsilon_symmetry = np.sign((a_phys[::2,previous_nb_snapshots:local_nb_snapshots]*a_phys[::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]).sum(-1))
+                                else:
+                                    epsilon_symmetry = np.sign((a_phys[:,previous_nb_snapshots:local_nb_snapshots]*a_phys[:,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]).sum(-1))
+                                epsilon_symmetry = epsilon_symmetry.reshape(epsilon_symmetry.shape[0], 1)
+                                sym_coeff = (par.type_sym=='centro')*(-1)**mF + (par.type_sym=='Rpi')*(-1)**(axis=='s')
+                                raw_phys_pod_modes = rearrange(phys_pod_modes,"t (d n) -> t d n",d=par.D)
+                                symmetrized_phys = np.empty(raw_phys_pod_modes.shape)
+                                for d in range(par.D):
+                                    symmetrized_phys[:, d, :] = sym_coeff*sym_tensor[d]*raw_phys_pod_modes[:, d, par.tab_pairs]
+                                symmetrized_phys = rearrange(symmetrized_phys,"t d n -> t (d n)")
+                                raw_phys_pod_modes = rearrange(raw_phys_pod_modes,"t d n -> t (d n)")
+                                phys_pod_modes = raw_phys_pod_modes + epsilon_symmetry*symmetrized_phys
+                                # symmetrized_phys = sym_coeff*sym_tensor*phys_pod_modes[:, par.tab_pairs]
+                                # phys_pod_modes += epsilon_symmetry*symmetrized_phys
+                                del symmetrized_phys
                                 gc.collect()
+
+                            # #===================================================== Adding mesh symmetry in this case as well
+                            # if par.should_we_add_mesh_symmetry:
+                            #     sym_data = rearrange(new_data,"t (d n) -> t d n",d=par.D)
+                            #     del new_data
+                            #     gc.collect()
+                            #     if par.type_sym == 'Rpi':
+                            #         for d in range(par.D):
+                            #             d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
+                            #             sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
+                            #         if counter_axis == 's':  # factor -1 when performing rpi-sym on sine components
+                            #             sym_data *= (-1)
+                            #     elif par.type_sym == 'centro':
+                            #         for d in range(par.D):
+                            #             d_coeff = (1/2-(d == 2))*2 # this coeff has value +1 when d = 0,1 (so for compo r & theta) and -1 when d = 2 (so for compo z)
+                            #             sym_data[:,d,:] = d_coeff*sym_data[:,d,par.tab_pairs]
+                            #         sym_data *= (-1)**mF# factor -1 when performing centro-sym on even Fourier modes
+                            #     sym_data = rearrange(sym_data,"t d n  -> t (d n)")
+                            #     coeff = -1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
+                            #     phys_pod_modes += coeff/(Nt_P*e_phys[1::2,None]) * a_phys[1::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]@sym_data
+                            #     del sym_data
+                            #     gc.collect()
                         # local_nb_snapshots,previous_nb_snapshots = local_nb_snapshots+T_new_data,local_nb_snapshots
                 # end for i,path in enumerate(list_paths)
                 if par.should_we_save_Fourier_POD:
@@ -179,14 +222,15 @@ def main_extract_modes(par):
                         nP=par.fourier_pod_modes_to_save[m_i]
                         np.save(par.complete_output_path+par.output_file_name+f"/fourier_pod_modes/mF_{mF:03d}_nP_{nP:03d}_{axis}",fourier_pod_modes[m_i])
                 if par.should_we_save_phys_POD:
+                    print(par.phys_pod_modes_to_save)
                     for m_i, nP in enumerate(par.phys_pod_modes_to_save):
                         # nP=par.phys_pod_modes_to_save[m_i]
                         if not consider_crossed_correlations:
                             np.save(par.complete_output_path+par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i])
-                        elif m_i%2==0:
+                        elif m_i%2==0 and nP%2 == 0:
                             coeff = +1*(axis=='c') - 1*(axis=='s')
-                            np.save(par.complete_output_path+par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{2*nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i//2])
-                            np.save(par.complete_output_path+par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{2*nP+1:03d}_mF_{mF:03d}_{counter_axis}",coeff*phys_pod_modes[m_i//2])
+                            np.save(par.complete_output_path+par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i//2])
+                            np.save(par.complete_output_path+par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP+1:03d}_mF_{mF:03d}_{counter_axis}",coeff*phys_pod_modes[m_i//2])
                         else:
                             continue
         # end for axis in [cos,sin]
