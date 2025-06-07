@@ -10,7 +10,7 @@ import numpy as np
 from read_data import global_parameters
 from compute_renormalizations import renormalization,build_mean_field
 from extract_latents import main_extract_latents
-from extract_modes import main_extract_modes
+from extract_modes import main_extract_modes, switch_to_bins_format
 from basic_functions import write_job_output,indiv_ranks,invert_rank
 ########################################################################
 
@@ -28,13 +28,15 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_save_phys_correlation','should_we_extract_latents','should_we_extract_modes',
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
-                'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym','should_we_remove_custom_field',
-                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric']
-list_chars = ['mesh_ext','path_to_mesh','directory_pairs','directory_codes','field',
-              'path_to_suites','name_job_output','output_path','output_file_name','type_sym']
+                'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym',
+                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format']
+list_chars = ['mesh_ext','path_to_mesh','field',
+              'path_to_suites','name_job_output','output_path','output_file_name','type_sym',
+              'bins_format','path_SFEMaNS_env']
+
 list_several_chars = []
 list_several_list_chars = ['paths_to_data']
-list_fcts = ['fct_for_custom_field']
+list_fcts = []
 
 list_vv_mesh = ['u','Tub']
 list_H_mesh = ['B','H','Mmu','Dsigma']
@@ -43,6 +45,14 @@ list_H_mesh = ['B','H','Mmu','Dsigma']
 
 par = global_parameters(data_file,list_ints,list_several_ints,list_floats,list_several_floats,list_bools,
 list_chars,list_several_chars,list_several_list_chars,list_fcts)
+
+########################################################################
+########################################################################
+
+sys.path.append(par.path_SFEMaNS_env)
+from read_write_SFEMaNS.read_stb import get_mesh
+from mesh.load_mesh import define_mesh
+from SFEMaNS_object.get_par import SFEMaNS_par
 
 ########################################################################
 ########################################################################
@@ -94,8 +104,6 @@ number_shifts = par.number_shifts
 
 mesh_ext = par.mesh_ext
 path_to_mesh = par.path_to_mesh
-directory_pairs = par.directory_pairs
-directory_codes = par.directory_codes
 
 path_to_suites = par.path_to_suites
 
@@ -118,6 +126,10 @@ else:
 
 par.list_modes = list_modes
 
+if par.save_bins_format:
+    if not par.bins_format in ['fourier', 'phys']:
+        raise ValueError(f"In bins_format, you chose {par.bins_format}. Please pick fourier or phys")
+
 ########################################################################
 ########################################################################
 # Mesh parameters + mesh symmetry pairs
@@ -131,22 +143,29 @@ elif field in list_H_mesh:
     mesh_type = 'H'
 
 par.mesh_type = mesh_type 
-
+sfem_par = SFEMaNS_par(path_to_mesh, mesh_type=mesh_type)
 
 assert (is_the_field_to_be_renormalized_by_its_L2_norm and is_the_field_to_be_renormalized_by_magnetic_energy) == False
 assert (field in list_vv_mesh) or (field in list_H_mesh)
 assert not (par.should_we_restrain_to_symmetric and par.should_we_restrain_to_antisymmetric)
 assert not ((par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric) and par.should_we_add_mesh_symmetry)
 
+R, Z, W = get_mesh(sfem_par)
+par.R = R
+par.Z = Z
+
 if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_restrain_to_antisymmetric:
+    # try:
     pairs=f"list_pairs_{mesh_type}.npy"
-    list_pairs = np.load(directory_pairs+pairs)
+    list_pairs = np.load(path_to_mesh+pairs)
     tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
     for elm in list_pairs:
         index,sym_index = elm
         tab_pairs[index] = int(sym_index)
         tab_pairs[sym_index] = int(index)
     par.tab_pairs = tab_pairs
+    # except TypeError:
+
 
 ########################################################################
 ########################################################################
@@ -200,12 +219,41 @@ if size > 1:
 name_job_output = par.name_job_output
 
 complete_output_path = path_to_suites + '/' + output_path
-path_to_job_output = directory_codes + '/JobLogs_outputs/' + name_job_output
+path_to_job_output = complete_output_path + '/JobLogs_outputs/' + name_job_output
 
 par.complete_output_path = complete_output_path
 par.path_to_job_output = path_to_job_output
 
-os.system(f"touch {directory_codes + '/JobLogs_outputs'}")
+
+########################################################################
+########################################################################
+################# Make sure all folders are created ####################
+########################################################################
+########################################################################
+
+if "D00" in field:
+    field_name_in_file = field[5:]
+else:
+    field_name_in_file = field
+
+par.field_name_in_file = field_name_in_file
+
+os.makedirs(complete_output_path,exist_ok=True)
+os.makedirs(complete_output_path+"/"+output_file_name,exist_ok=True)
+
+os.makedirs(complete_output_path+"/"+output_file_name+"/latents" ,exist_ok=True)
+
+os.makedirs(complete_output_path+"/"+output_file_name+"/energies" ,exist_ok=True)
+
+if should_we_add_mesh_symmetry:
+    os.makedirs(complete_output_path+"/"+output_file_name+"/symmetry" ,exist_ok=True)
+
+if should_we_save_Fourier_POD:
+    os.makedirs(complete_output_path+output_file_name+"/fourier_pod_modes",exist_ok=True)
+if should_we_save_phys_POD:
+    os.makedirs(complete_output_path+output_file_name+"/phys_pod_modes",exist_ok=True)
+
+os.system(f"touch {complete_output_path + '/JobLogs_outputs'}")
 os.system(f"touch {path_to_job_output}")
 
 if rank == 0:
@@ -260,6 +308,8 @@ if par.should_we_save_phys_POD and rank == 0:
         else:
             write_job_output(par.path_to_job_output,f'      Considering crossed correlation matrices for {m}-family')
 
+        os.makedirs(complete_output_path+output_file_name+f"/phys_pod_modes/m{m:03d}",exist_ok=True)
+
 
 paths_to_data = par.paths_to_data
 
@@ -269,42 +319,13 @@ output_file_name = par.output_file_name
 
 ########################################################################
 ########################################################################
-# Mesh parameters + mesh symmetry pairs
-########################################################################
-########################################################################
-
-
-if field in list_vv_mesh:
-    mesh_type = 'vv'
-elif field in list_H_mesh:
-    mesh_type = 'H'
-
-par.mesh_type = mesh_type 
-
-
-assert (is_the_field_to_be_renormalized_by_its_L2_norm and is_the_field_to_be_renormalized_by_magnetic_energy) == False
-assert (field in list_vv_mesh) or (field in list_H_mesh)
-
-
-if should_we_add_mesh_symmetry:
-    pairs=f"list_pairs_{mesh_type}.npy"
-    list_pairs = np.load(directory_pairs+pairs)
-    tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
-    for elm in list_pairs:
-        index,sym_index = elm
-        tab_pairs[index] = int(sym_index)
-        tab_pairs[sym_index] = int(index)
-    par.tab_pairs = tab_pairs
-
-########################################################################
-########################################################################
 # Build the necessary sparse matrices if introducing mesh symmetry
 ########################################################################
 ########################################################################
 
-R = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}rr_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
-Z = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
-W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
+# R = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}rr_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
+# Z = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
+# W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
 WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
 
 if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_restrain_to_antisymmetric:
@@ -339,38 +360,6 @@ else:
 
 par.for_building_symmetrized_weights = for_building_symmetrized_weights
 
-par.R = R
-par.Z = Z
-
-
-
-########################################################################
-########################################################################
-################# Make sure all folders are created ####################
-########################################################################
-########################################################################
-
-if "D00" in field:
-    field_name_in_file = field[5:]
-else:
-    field_name_in_file = field
-
-par.field_name_in_file = field_name_in_file
-
-os.makedirs(complete_output_path,exist_ok=True)
-os.makedirs(complete_output_path+"/"+output_file_name,exist_ok=True)
-
-os.makedirs(complete_output_path+"/"+output_file_name+"/latents" ,exist_ok=True)
-
-os.makedirs(complete_output_path+"/"+output_file_name+"/energies" ,exist_ok=True)
-
-if should_we_add_mesh_symmetry:
-    os.makedirs(complete_output_path+"/"+output_file_name+"/symmetry" ,exist_ok=True)
-
-if should_we_save_Fourier_POD:
-    os.makedirs(complete_output_path+output_file_name+"/fourier_pod_modes",exist_ok=True)
-if should_we_save_phys_POD:
-    os.makedirs(complete_output_path+output_file_name+"/phys_pod_modes",exist_ok=True)
 
 ########################################################################
 ########################################################################
@@ -465,6 +454,17 @@ if should_we_extract_modes:
         comm.Barrier()
     if rank == 0:
         write_job_output(path_to_job_output,"=========================================================== FINISHED MODES EXTRACTION")
+
+if par.save_bins_format:
+    if par.size != 1:
+        par.comm.Barrier()
+    if rank == 0:
+        write_job_output(path_to_job_output,"=========================================================== BEGINNING SWITCH TO BINS FORMAT")
+    switch_to_bins_format(par, sfem_par)
+    if size != 1:
+        comm.Barrier()
+    if rank == 0:
+        write_job_output(path_to_job_output,"=========================================================== FINISHED SWITCH TO BINS FORMAT")
 
 if size != 1:
     MPI.Finalize

@@ -1,5 +1,4 @@
 import numpy as np
-from template_fields_to_remove import *
 
 class parameters:
     def __init__(self,list_ints,elms_ints,list_several_ints,elms_lists_ints,list_floats,elms_floats,list_several_floats,elms_lists_floats,list_bools,
@@ -71,12 +70,12 @@ list_chars,list_several_chars,list_several_list_chars,list_fcts):
                     list_new_params[k] = float(num)
                 globals()[new_name] = list_new_params
                 list_new_params = np.array(list_new_params,dtype=float)
-            elif new_name in list_fcts:
-                if new_name == "fct_for_custom_field":
-                    new_param = raw_lines[i+1].split('\n')[0]
-                    new_param = new_param.split(',')[0]
+            # elif new_name in list_fcts:
+            #     if new_name == "fct_for_custom_field":
+            #         new_param = raw_lines[i+1].split('\n')[0]
+            #         new_param = new_param.split(',')[0]
 
-                    fct_for_custom_field = globals()[new_param]
+            #         fct_for_custom_field = globals()[new_param]
                     # globals()[new_name] = globals()[new_param]
             else:
                 new_param = raw_lines[i+1].split('\n')[0]
@@ -101,7 +100,7 @@ list_chars,list_several_chars,list_several_list_chars,list_fcts):
     elms_lists_chars = [globals()[several_chars] for several_chars in list_several_chars]
     elms_lists_lists_chars = [globals()[several_lists_chars] for several_lists_chars in list_several_list_chars]
     # elms_fcts = [globals()[quantity_func] for quantity_func in list_fcts]
-    elms_fcts = [fct_for_custom_field]
+    elms_fcts = []
 
     all_parameters = parameters(list_ints,elms_ints,list_several_ints,elms_lists_ints,list_floats,elms_floats,list_several_floats,elms_lists_floats,
                                 list_bools,elms_bools,

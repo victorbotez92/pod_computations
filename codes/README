@@ -46,15 +46,16 @@ BE CAREFUL BECAUSE THE INTRODUCTION OF SHIFT ANGLES IS INCOMPATIBLE WITH DIRECTO
             
 
         -all POD outputs are built within output_path+output_file_name
-        -job output (created by python, independant from the one from slurm) is located within directory_codes+'/JobLogs_output/'+name_job_output
+
 
     DIVERSE
-        -should_we_extract_modes: requires to first compute the latents but the two can be put to True together
+        -should_we_extract_modes: can be done individually after should_we_extract_latents
+        -save_bins_format: can be done individually after should_we_extract_modes
 
 
 
 
-next improvements to implement : -add restart files if too many snapshots
+next improvements to implement : -add possibility to compute pairs of modes
+                                 -make compatibility with SFEMaNS smoother
                                  -parallelize on dimension D (actually tried but with no improvement in physical time...) and on meridian sections S
-                                 -add centro-symmetry
-                                 -There is a pb about the way we save symmetry, try thinking about it again... ... ...
+                                 -write nicer read_data

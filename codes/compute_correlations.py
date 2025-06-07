@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 #from memory_profiler import profile
-
-#sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
 import numpy as np
 from scipy.sparse import csr_matrix
 

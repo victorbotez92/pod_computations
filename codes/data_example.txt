@@ -7,16 +7,13 @@
 .mesh_005_02_2_ext3_sym.FEM
 
 ===path_to_mesh===
-/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/meshes/
+/Users/Utilisateur/OneDrive/Bureau/SFEMaNS_env/mesh_VKS_no_lid_layer
 
-===directory_pairs===
-/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/meshes/
-
-===directory_codes===
-/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/
-
-===nb_bits=== #either 32 or 64 (64 necessary when including shifts?)
+===nb_bits=== #either 32 or 64
 64
+
+===path_SFEMaNS_env===
+/Users/Utilisateur/OneDrive/Bureau/SFEMaNS_env/SFEMaNS_env
 
 ##################### Data for computing POD latents (first step)
 #################################################
@@ -37,13 +34,13 @@ u
 3
 
 ===MF=== #number of Fourier modes
-64
+20
 
 ===opt_mF=== # write the list of Fourier modes to consider for POD (leave to -1 to set to np.arange(MF))
-1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63
+-1
 
 ===should_we_save_Fourier_POD===
-True
+False
 
 ===should_we_save_phys_POD===
 True
@@ -55,10 +52,10 @@ True
 #################################################
 
 ===nb_proc_in_fourier=== # can use at most one proc for each mF
-64
+1
 
 ===nb_proc_in_axis=== # set to 2 if want to parallelize computations on sine and cosine
-2
+1
 
 ===nb_proc_in_meridian=== # can parallelize on the number of subdomains NOT WORKING FOR NOW
 1
@@ -85,7 +82,7 @@ False
 #################################################
 
 ===should_we_add_mesh_symmetry===
-True
+False
 
 ===should_we_restrain_to_symmetric===
 False
@@ -115,16 +112,10 @@ False
 #################################################
 
 ===should_we_remove_mean_field=== #this will compute the avg field of each Fourier component and then remove it from the field (NOT WORKING)
-True
+False
 
 ===should_mean_field_computation_include_mesh_sym=== #only relevant when setting mesh symmetry to True and should_we_remove_mean_field to True
 True
-
-===should_we_remove_custom_field===
-True
-
-===fct_for_custom_field=== #name of the function, defined in template_fields_to_remove.py, that will be removed to field of POD
-example
 
 ######################  Parameters for saving POD modes (Second step)
 #################################################
@@ -142,7 +133,7 @@ False
 False
 
 ===phys_pod_modes_to_save=== #useless if param above set to True
-0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
+0,1
 
 ######################  Lists of different necessary paths (see ReadMe for more details)
 #################################################
@@ -151,23 +142,19 @@ False
 #################################################
 
 ===path_to_suites===
-/gpfs/workdir/botezv/MY_APPLICATIONS_SFEMaNS_GIT/LES_VKS_TM73/RUNS/Runs_SFeMANS/Re1500_Rm150_mu50/data_tgcc/lin/
+/Users/Utilisateur/OneDrive/Bureau/SFEMaNS_env/POD_test
 
 ===paths_to_data===
-/tfin_0/binaries_out/u/,/tfin_1/binaries_out/u/,/tfin_2/binaries_out/u/
-/tfin_3/binaries_out/u/,/tfin_4/binaries_out/u/,/tfin_5/binaries_out/u/
-/tfin_6/binaries_out/u/,/tfin_7/binaries_out/u/
-
-
+/tfin_0/binaries_out/u/
 
 ===output_path===
-/PODs_out/
+/test_npy/
 
 ===output_file_name===
-/half_shift_u/
+//
 
 ===name_job_output===
-half_shift_u.txt
+test.txt
 
 
 ######################  Saving options
@@ -177,10 +164,16 @@ half_shift_u.txt
 #################################################
 
 ===should_we_extract_latents===
-True
+False
 
 ===should_we_save_phys_correlation===  # beware for this requires to compute the phys POD as well
-True
+False
 
 ===should_we_extract_modes===
+False
+
+===save_bins_format===
 True
+
+===bins_format=== #either fourier or phys
+fourier

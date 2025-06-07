@@ -113,9 +113,6 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
         if should_we_renormalize and par.is_the_field_to_be_renormalized_by_its_L2_norm:
             new_data = apply_renormalization(par,new_data,path_to_data)
 
-        if par.should_we_remove_custom_field:
-            new_data -= par.fct_for_custom_field(mF,par.R,par.Z)[np.newaxis,:]
-
         if par.should_we_remove_mean_field and not building_mean_field:
             new_data -= import_mean_field(par, mF, axis)
 
