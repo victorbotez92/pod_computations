@@ -9,7 +9,7 @@ import gc
 from einops import rearrange
 import numpy as np
 from scipy.sparse import csr_matrix
-from basic_functions import write_job_output
+# from basic_functions import write_job_output
 
 class POD:
     def __init__(self,eigvals,proj_coeffs,symmetries):
@@ -39,8 +39,7 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
                     normalization_anti = np.mean(anti_vect.real/anti_vect.imag,axis=0)
                     del anti_vect
                     gc.collect()
-                    if np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real < 1e-4) != 1:
-                        write_job_output(par.path_to_job_output, f"WARNING: {np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real < 1e-4)} not very pure latents with maximum at {np.max(((normalization_sym+1.j)/(normalization_anti+1.j)).real)}")
+                    assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real < 1e-4) == 1
                     eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
                     eigenvectors /= np.reshape((np.abs(eigenvectors)).sum(0),(1, Nt_int))   #renormalize eigenvectors
     # full_eigenvectors[:Nt, :] = eigenvectors

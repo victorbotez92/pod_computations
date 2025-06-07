@@ -29,9 +29,9 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
                 'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym','should_we_remove_custom_field',
-                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric', "should_we_modify_weights"]
+                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric']
 list_chars = ['mesh_ext','path_to_mesh','directory_pairs','directory_codes','field',
-              'path_to_suites','name_job_output','output_path','output_file_name','type_sym',"directory_scalar_for_weights"]
+              'path_to_suites','name_job_output','output_path','output_file_name','type_sym']
 list_several_chars = []
 list_several_list_chars = ['paths_to_data']
 list_fcts = ['fct_for_custom_field']
@@ -305,27 +305,6 @@ if should_we_add_mesh_symmetry:
 R = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}rr_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
 Z = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}zz_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
 W = np.hstack([np.fromfile(path_to_mesh+f"/{mesh_type}weight_S{s:04d}"+mesh_ext) for s in range(rank_meridian,S,nb_proc_in_meridian)]).reshape(-1)
-
-if par.should_we_modify_weights:
-    if par.rank == 0:
-        write_job_output(par.path_to_job_output, "weights for scalar product will be modified")
-    sys.path.append(par.directory_scalar_for_weights)
-    from weight_pod import axisym_scalar
-    scalar_weight_contrib = axisym_scalar(R, Z)
-
-    if scalar_weight_contrib.min() <= 0:
-        raise ValueError(f"in 'should_we_modify_weihgts: scalar function must return only strictly positive values")
-    if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_restrain_to_antisymmetric:
-        sym_scalar_weight = 1/2*(scalar_weight_contrib+scalar_weight_contrib[tab_pairs])
-        if np.max((scalar_weight_contrib-sym_scalar_weight)/scalar_weight_contrib) > 1e-9:
-            if par.rank == 0:
-                write_job_output(par.path_to_job_output, f"WARNING: required symmetrization and not perfect scalar weight contribution (error {np.max(antisym_scalar_weight/scalar_weight_contrib)})")
-                write_job_output(par.path_to_job_output, "symmetrizing scalar weight contribution by hand.")
-            scalar_weight_contrib = np.copy(sym_scalar_weight)
-            assert np.max(1/2*(scalar_weight_contrib-scalar_weight_contrib[tab_pairs])) < 1e-14
-    W *= scalar_weight_contrib
-    W /= W.sum()
-
 WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
 
 if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_restrain_to_antisymmetric:
@@ -341,7 +320,7 @@ if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_r
     elif D == 1:
         relative_signs = [1]
 
- 
+    WEIGHTS_with_symmetry = np.array([relative_signs[d]*W for d in range(D)]).reshape(-1)  
     rows = []
     columns = []
     for elm in list_pairs:
@@ -353,7 +332,6 @@ if should_we_add_mesh_symmetry or should_we_restrain_to_symmetric or should_we_r
     rows = np.array(rows)
     columns = np.array(columns)
 
-    WEIGHTS_with_symmetry = np.array([relative_signs[d]*W for d in range(D)]).reshape(-1) 
     for_building_symmetrized_weights = (rows,columns,WEIGHTS,WEIGHTS_with_symmetry)
 
 else:

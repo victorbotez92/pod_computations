@@ -2,3 +2,4 @@ JobLogs/
 JobLogs_outputs/
 job_launcher/
 codes/__pycache__/
+scalar_for_weights/

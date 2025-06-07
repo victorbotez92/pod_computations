@@ -126,12 +126,6 @@ True
 ===fct_for_custom_field=== #name of the function, defined in template_fields_to_remove.py, that will be removed to field of POD
 example
 
-===should_we_modify_weights=== #beware for this only works with an axisymmetric scalar function
-True
-
-===directory_scalar_for_weights=== #python module "weight_pod.py", function imported is axisym_scalar and takes two numpy arguments: R, Z
-/example/of/directory
-
 ######################  Parameters for saving POD modes (Second step)
 #################################################
 #################################################
