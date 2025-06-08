@@ -219,7 +219,8 @@ if size > 1:
 name_job_output = par.name_job_output
 
 complete_output_path = path_to_suites + '/' + output_path
-path_to_job_output = complete_output_path + '/JobLogs_outputs/' + name_job_output
+# path_to_job_output = complete_output_path + '/JobLogs_outputs/' + name_job_output
+path_to_job_output = complete_output_path + '/' + output_file_name + '/JobLogs_outputs/'
 
 par.complete_output_path = complete_output_path
 par.path_to_job_output = path_to_job_output
@@ -253,7 +254,9 @@ if should_we_save_Fourier_POD:
 if should_we_save_phys_POD:
     os.makedirs(complete_output_path+output_file_name+"/phys_pod_modes",exist_ok=True)
 
-os.system(f"touch {complete_output_path + '/JobLogs_outputs'}")
+
+# os.makedirs(f"{complete_output_path + '/JobLogs_outputs'}",exist_ok=True)
+os.makedirs(path_to_job_output, exist_ok=True)
 os.system(f"touch {path_to_job_output}")
 
 if rank == 0:
