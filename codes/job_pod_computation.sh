@@ -26,7 +26,7 @@ set -x
 data_directory="/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/data_example.txt"
 
 echo 'running pod'
-srun python /home/botez18/APPLICATIONS_POD/pod_computations/codes/initialization.py "$data_directory"
+srun python /home/botez18/APPLICATIONS_POD/pod_computations/codes/main.py "$data_directory"
 
 wait
 date
