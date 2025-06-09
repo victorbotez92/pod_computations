@@ -76,6 +76,12 @@ False
 ===is_the_field_to_be_renormalized_by_its_L2_norm=== # relevant in the growth phase
 False
 
+===should_we_modify_weights=== #beware for this only works with an axisymmetric scalar function
+False
+
+===directory_scalar_for_weights=== #python module "weight_pod.py", function imported is axisym_scalar and takes two numpy arguments: R, Z
+/gpfs/users/botezv/APPLICATIONS_POD/pod_computations/scalar_for_weights/
+
 ###################### data enhancement methods (can choose multiple ones)
 #################################################
 #################################################
