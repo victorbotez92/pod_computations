@@ -34,7 +34,7 @@ def get_data(path_to_suite,field,mesh_type,mF,D,S,T,N,axis,type_float = np.float
                 path=path_to_suite+"/fourier_{f}{ax}_S{s:04d}_F{m:04d}".format(f=field,ax=axis,s=s,m=mF)+mesh_type
 
             new_data = np.array(get_file(path,n),dtype=type_float)
-            new_data = new_data.reshape(T,len(new_data)//T)
+            new_data = rearrange(new_data, '(T N) -> T N', T=T)#new_data.reshape(T,len(new_data)//T)
             if s==0:
                 data[:,d,:N_slice[s]]=np.copy(new_data)
             else:

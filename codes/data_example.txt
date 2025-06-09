@@ -27,6 +27,9 @@ False
 ===field=== # Name of field
 u
 
+===mesh_type=== # either vv or H
+vv
+
 ===D=== #number of dimensions
 3
 
@@ -60,8 +63,6 @@ True
 ===nb_proc_in_meridian=== # can parallelize on the number of subdomains NOT WORKING FOR NOW
 1
 
-===nb_proc_in_dimension=== # can parallelize on the number of dimensions NOT WORKING FOR NOW (and not efficient at all)
-1
 
 ###################### possibilities to renormalize (make sure to choose at most one)
 #################################################

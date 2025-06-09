@@ -61,9 +61,15 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
         del full_eigenvectors
         gc.collect()
     eigvals = eigenvalues[::-1]
+    if eigvals.min() < 0:
+        print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {a}")
     # eigvals = np.abs(eigenvalues[::-1])  # this is good (same signature as code on ruche + the test went well)
     eigenvectors = eigenvectors/(np.sum(eigenvectors**2, axis = 0).reshape(1, eigvals.shape[0]))
-    proj_coeffs = (np.sqrt(Nt_float*(eigvals[:,np.newaxis]).T)*eigenvectors[:,::-1]).T
+    # try:
+    proj_coeffs = (np.sqrt(Nt_float*(np.abs(eigvals[:,np.newaxis])).T)*eigenvectors[:,::-1]).T
+    # except RuntimeWarning:
+    #     proj_coeffs = (np.sqrt(np.abs(Nt_float*(eigvals[:,np.newaxis]).T))*eigenvectors[:,::-1]).T
+    #     print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {a}")
     # if par.rank == 0:
     #     write_job_output(par.path_to_job_output, f'{eigenvectors.shape, proj_coeffs.shape}')
     del eigenvectors
