@@ -39,7 +39,7 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
                     normalization_anti = np.mean(anti_vect.real/anti_vect.imag,axis=0)
                     del anti_vect
                     gc.collect()
-                    assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real < 1e-4) == 1
+                    assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) == 1
                     eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
                     eigenvectors /= np.reshape((np.abs(eigenvectors)).sum(0),(1, Nt_int))   #renormalize eigenvectors
     # full_eigenvectors[:Nt, :] = eigenvectors
@@ -56,22 +56,16 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
             gc.collect()
         else:
             eigenvectors = full_eigenvectors.real
-    # else:
-    #     eigenvectors = full_eigenvectors.real
         del full_eigenvectors
         gc.collect()
+    else:
+        eigenvectors = eigenvectors.real
     eigvals = eigenvalues[::-1]
     if eigvals.min() < 0:
         print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {a}")
-    # eigvals = np.abs(eigenvalues[::-1])  # this is good (same signature as code on ruche + the test went well)
     eigenvectors = eigenvectors/(np.sum(eigenvectors**2, axis = 0).reshape(1, eigvals.shape[0]))
-    # try:
     proj_coeffs = (np.sqrt(Nt_float*(np.abs(eigvals[:,np.newaxis])).T)*eigenvectors[:,::-1]).T
-    # except RuntimeWarning:
-    #     proj_coeffs = (np.sqrt(np.abs(Nt_float*(eigvals[:,np.newaxis]).T))*eigenvectors[:,::-1]).T
-    #     print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {a}")
-    # if par.rank == 0:
-    #     write_job_output(par.path_to_job_output, f'{eigenvectors.shape, proj_coeffs.shape}')
+
     del eigenvectors
     gc.collect()
     symmetries = np.zeros(eigvals.shape, dtype=np.complex128)

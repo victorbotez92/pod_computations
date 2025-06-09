@@ -27,7 +27,7 @@ dict_for_fields = {
 
 
 
-def init(data_file):
+def init(data_file, parallelize = True):
 
 
     par = parameters(data_file)
@@ -226,6 +226,19 @@ def init(data_file):
     R, Z, W = get_mesh(sfem_par)
     par.R = R
     par.Z = Z
+    if par.should_we_modify_weights:
+        if par.directory_scalar_for_weights == '':
+            raise ValueError(f"You chose to modify weights but specified wrong path for weights: {par.directory_scalar_for_weights}")
+        existence = os.path.exists(par.directory_scalar_for_weights+'/weight_pod.py')
+        if not existence:
+            raise ValueError(f"{par.directory_scalar_for_weights} does not exist")
+        sys.path.append(par.directory_scalar_for_weights)
+        from weight_pod import axisym_scalar
+        to_be_multiplied = axisym_scalar(R, Z)
+        if to_be_multiplied.min() <= 0:
+            raise ValueError("the funciton axisym_scalar you coded returns negative values, make sure it only returns strictly positive")
+        W *= to_be_multiplied
+        W /= W.sum()
     WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
 
     if par.should_we_add_mesh_symmetry or par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric:
@@ -284,7 +297,7 @@ def init(data_file):
     nb_proc_in_axis = par.nb_proc_in_axis
     nb_proc_in_meridian = par.nb_proc_in_meridian
 
-    if nb_proc_in_fourier*nb_proc_in_axis*nb_proc_in_meridian==1:
+    if nb_proc_in_fourier*nb_proc_in_axis*nb_proc_in_meridian==1 or not parallelize:
         rank = 0
         size = 1
         comm = None
@@ -293,7 +306,7 @@ def init(data_file):
         rank = comm.Get_rank()
         size = comm.Get_size()
 
-    assert (size==nb_proc_in_fourier*nb_proc_in_axis*nb_proc_in_meridian)
+    assert (size==nb_proc_in_fourier*nb_proc_in_axis*nb_proc_in_meridian or not parallelize)
 
     par.comm = comm
     par.rank = rank

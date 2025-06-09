@@ -57,7 +57,8 @@ def main_extract_modes(data_par):
                         raise Exception(ValueError, f"Code considers crossed correlations: make sure for all even nP mode the odd nP+1 is also present (here you required {data_par.phys_pod_modes_to_save[i]}, make sure to require {data_par.phys_pod_modes_to_save[i]+1} as well)")
             a_phys = np.load(data_par.complete_output_path+data_par.output_file_name+f"/a_phys_(mode_time)_m{fourier_family}.npy")[data_par.phys_pod_modes_to_save, :] # signature n,T
             Nt_P = a_phys.shape[-1]//data_par.number_shifts
-            e_phys = np.square(a_phys).sum(-1)/Nt_P
+            # e_phys = np.square(a_phys).sum(-1)/Nt_P
+            e_phys = np.square(a_phys[:, :Nt_P]).sum(-1)/Nt_P
 
         if data_par.rank == 0:
             write_job_output(data_par.path_to_job_output,f'entering Fourier loop {num_mF//data_par.nb_proc_in_fourier+1}/{len(data_par.list_modes[data_par.rank_fourier::data_par.nb_proc_in_fourier])//data_par.nb_proc_in_fourier}')
@@ -160,12 +161,17 @@ def main_extract_modes(data_par):
                                 del symmetrized_phys
                                 gc.collect()
                 # end for i,path in enumerate(list_paths)
+                _, _, WEIGHTS, _ = data_par.for_building_symmetrized_weights
                 if data_par.should_we_save_Fourier_POD:
+                    normalization_factors = np.sum(fourier_pod_modes**2*(WEIGHTS.reshape(1, WEIGHTS.shape[0])), axis=1)
+                    fourier_pod_modes /= normalization_factors.reshape(normalization_factors.shape[0], 1)# rearrange(fourier_pod_modes,"t d n -> t (d n)")
                     for m_i in range(data_par.fourier_pod_modes_to_save.size):
                         nP=data_par.fourier_pod_modes_to_save[m_i]
                         np.save(data_par.complete_output_path+data_par.output_file_name+f"/fourier_pod_modes/mF_{mF:03d}_nP_{nP:03d}_{axis}",fourier_pod_modes[m_i])
                 
                 if data_par.should_we_save_phys_POD:
+                    # normalization_factors = np.sum(phys_pod_modes**2*(WEIGHTS.reshape(1, WEIGHTS.shape[0])), axis=1)
+                    # phys_pod_modes /= normalization_factors.reshape(normalization_factors.shape[0], 1)
                     for m_i, nP in enumerate(data_par.phys_pod_modes_to_save):
                         # nP=data_par.phys_pod_modes_to_save[m_i]
                         if not consider_crossed_correlations:
@@ -183,15 +189,19 @@ def switch_to_bins_format(data_par, sfem_par):
 
     sys.path.append(data_par.path_SFEMaNS_env)
     from read_write_SFEMaNS.write_stb import write_fourier, write_phys
+    from read_write_SFEMaNS.read_stb import get_mesh
     from vector_operations.FFT_IFFT import fourier_to_phys
-    # list_m = [elm.min() for elm in data_par.list_m_families]
+    
     nb_m = len(data_par.list_m_families)
     list_m_nP = [(num_m, nP) for num_m in range(nb_m) for nP in data_par.phys_pod_modes_to_save]
     path_out = data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/"
+
+    _, _, W = get_mesh(sfem_par)
+
     for i in range(data_par.rank, len(list_m_nP), data_par.size):
         num_m, nP = list_m_nP[i]
         m = data_par.list_m_families[num_m].min()
-        pod_fourier_format = np.empty((len(data_par.R), 2*data_par.D, data_par.list_modes.max()+1))  #(N a*D MF)
+        pod_fourier_format = np.zeros((len(data_par.R), 2*data_par.D, data_par.list_modes.max()+1))  #(N a*D MF)
         for mF in data_par.list_m_families[num_m]:
             for a, axis in enumerate(["c", "s"]):
                 if not(mF == 0 and axis == 's'):
@@ -199,6 +209,11 @@ def switch_to_bins_format(data_par, sfem_par):
                 else:
                     new_mode = np.zeros(data_par.D*data_par.R.shape[0])
                 pod_fourier_format[:, a::2, mF] = rearrange(new_mode, '(d n) -> n d', d=data_par.D)
+        
+        normalization_factors = np.sum(pod_fourier_format**2*(W.reshape(W.shape[0], 1, 1)), axis=(0,1))
+        normalization_factors[1: ] /= 2
+        normalization_factors = normalization_factors.sum()
+        pod_fourier_format /= normalization_factors
         
         if data_par.bins_format == 'fourier':
             write_fourier(sfem_par,pod_fourier_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1)

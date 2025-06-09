@@ -16,10 +16,11 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
                 'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym',
-                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format']
+                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format',
+                'should_we_modify_weights']
 list_chars = ['mesh_ext','path_to_mesh','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym',
-              'bins_format','path_SFEMaNS_env','mesh_type']
+              'bins_format','path_SFEMaNS_env','mesh_type','directory_scalar_for_weights']
 
 list_several_chars = []
 list_several_list_chars = ['paths_to_data']
@@ -234,6 +235,16 @@ class parameters:
             if not test:
                 should_mean_field_computation_include_mesh_sym = True
             self.should_mean_field_computation_include_mesh_sym = should_mean_field_computation_include_mesh_sym
+#######################################################
+            test, should_we_modify_weights = find_string(lines, 'should_we_modify_weights')
+            if not test:
+                should_we_modify_weights = False
+            self.should_we_modify_weights = should_we_modify_weights
+#######################################################
+            test, directory_scalar_for_weights = find_string(lines, 'directory_scalar_for_weights')
+            if not test:
+                directory_scalar_for_weights = ''
+            self.directory_scalar_for_weights = directory_scalar_for_weights
 #######################################################
             test, should_we_add_mesh_symmetry = find_string(lines, 'should_we_add_mesh_symmetry')
             if not test:

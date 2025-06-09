@@ -168,7 +168,7 @@ def main_extract_latents(par):
             if par.rank_fourier == 0:
                 all_eigvals = [pod.eigvals for pod in list_pod_a]
                 all_eigvals = np.concatenate(all_eigvals)
-                sorting_indexes = np.argsort(all_eigvals)
+                sorting_indexes = np.argsort(all_eigvals)[::-1] #sort in decreasing order
                 all_eigvals = all_eigvals[sorting_indexes]
                 all_eigvecs = np.vstack([pod.proj_coeffs for pod in list_pod_a])[sorting_indexes, :]
                 all_symmetries = np.concatenate([pod.symmetries for pod in list_pod_a])[sorting_indexes]
