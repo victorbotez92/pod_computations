@@ -117,7 +117,7 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
             new_data -= import_mean_field(par, mF, axis)
 
         if par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric:
-            new_data = rearrange(new_data,"t (d n) -> t d n", d=3)
+            new_data = rearrange(new_data,"t (d n) -> t d n", d=par.D)
             coeff = 1
             if par.should_we_restrain_to_antisymmetric:
                 coeff *= -1
