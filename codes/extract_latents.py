@@ -98,13 +98,13 @@ def main_extract_latents(par):
                     list_correlations = [np.zeros(correlation.shape, dtype=np.complex128) for _ in par.list_m_families]
 
                 if mF == 0:
-                    list_correlations[index_correlation] += correlation
+                    list_correlations[index_correlation] += correlation/(par.number_shifts)**2
                     # if consider_crossed_correlations:
                     #     list_correlations[index_correlation] += 2*1.j*epsilon_correlations*crossed_correlations
                 else:
-                    list_correlations[index_correlation] += par.type_float(1/2)*correlation
+                    list_correlations[index_correlation] += par.type_float(1/2)*correlation/(par.number_shifts)**2
                     if consider_crossed_correlations:
-                        list_correlations[index_correlation] += 1.j*epsilon_correlations*crossed_correlations
+                        list_correlations[index_correlation] += 1.j*epsilon_correlations*crossed_correlations/(par.number_shifts)**2
 
             if axis == 's' and mF == 0:
                 del correlation

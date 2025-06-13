@@ -20,6 +20,11 @@ class POD:
 # @profile
 def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_crossed_correlations=False):
     eigenvalues,eigenvectors = np.linalg.eigh(correlation)
+    eigenvalues, eigenvectors = eigenvalues[::-1], eigenvectors[:, ::-1]
+
+    # if mF is None:
+    #     eigenvalues *= par.number_shifts
+
     Nt_float = par.type_float(len(correlation))
     Nt_int = len(correlation)
 
@@ -41,11 +46,18 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
                     gc.collect()
                     assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) == 1
                     eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
-                    eigenvectors /= np.reshape((np.abs(eigenvectors)).sum(0),(1, Nt_int))   #renormalize eigenvectors
-    # full_eigenvectors[:Nt, :] = eigenvectors
+                    eigenvectors /= np.reshape(np.sqrt((np.abs(eigenvectors**2)).sum(0)),(1, Nt_int))   #renormalize eigenvectors
+
+
+        if consider_crossed_correlations:
+            eigenvectors = eigenvectors/np.sqrt(1/2*np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
+        else:
+            eigenvectors = eigenvectors/np.sqrt(np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
+
         for m in range(par.number_shifts):
             full_eigenvectors[m*Nt_int:(m+1)*Nt_int, :] = np.exp(-2*1.j*np.pi*family/par.number_shifts*m)*eigenvectors
         if consider_crossed_correlations:
+            # full_eigenvectors = full_eigenvectors/np.sqrt(1/2*np.sum(np.abs(full_eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
             real_part = full_eigenvectors.real
             imag_part = full_eigenvectors.imag
             eigenvectors = np.empty((full_eigenvectors.shape[0], 2*full_eigenvectors.shape[1]))
@@ -56,19 +68,20 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
             gc.collect()
         else:
             eigenvectors = full_eigenvectors.real
+            # eigenvectors = eigenvectors/np.sqrt(np.sum(eigenvectors**2, axis = 0).reshape(1, eigenvalues.shape[0]))
         del full_eigenvectors
         gc.collect()
     else:
         eigenvectors = eigenvectors.real
-    eigvals = eigenvalues[::-1]
-    if eigvals.min() < 0:
+        eigenvectors = eigenvectors/np.sqrt(np.sum(eigenvectors**2, axis = 0).reshape(1, eigenvalues.shape[0]))
+    if eigenvalues.min() < 0:
         print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {a}")
-    eigenvectors = eigenvectors/(np.sum(eigenvectors**2, axis = 0).reshape(1, eigvals.shape[0]))
-    proj_coeffs = (np.sqrt(Nt_float*(np.abs(eigvals[:,np.newaxis])).T)*eigenvectors[:,::-1]).T
+    
+    proj_coeffs = (np.sqrt(Nt_float*(np.abs(eigenvalues[:,np.newaxis])).T)*eigenvectors).T
 
     del eigenvectors
     gc.collect()
-    symmetries = np.zeros(eigvals.shape, dtype=np.complex128)
+    symmetries = np.zeros(eigenvalues.shape, dtype=np.complex128)
     if par.should_we_add_mesh_symmetry:
         symmetries += np.sign(np.sum(proj_coeffs[:, :Nt_int//2]*proj_coeffs[:, Nt_int//2:Nt_int],axis=1))
     if not (family is None):
@@ -85,7 +98,7 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
         else:
             raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
 
-    computed_pod = POD(eigvals,proj_coeffs,symmetries)
+    computed_pod = POD(eigenvalues,proj_coeffs,symmetries)
 
     return computed_pod 
 

@@ -5,7 +5,7 @@ import gc
 #from memory_profiler import profile
 
 #sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
-from einops import rearrange
+from einops import rearrange, einsum
 import numpy as np
 
 ###############################
@@ -42,9 +42,9 @@ def main_extract_modes(data_par):
             else:
                 consider_crossed_correlations = True
                 if (fourier_family-mF)%data_par.number_shifts == 0:
-                    epsilon_correlations = -1
-                else:
                     epsilon_correlations = 1
+                else:
+                    epsilon_correlations = -1
             if consider_crossed_correlations:
                 bool_valid_nPs = data_par.phys_pod_modes_to_save.size%2==0
                 if not bool_valid_nPs:
@@ -57,8 +57,14 @@ def main_extract_modes(data_par):
                         raise Exception(ValueError, f"Code considers crossed correlations: make sure for all even nP mode the odd nP+1 is also present (here you required {data_par.phys_pod_modes_to_save[i]}, make sure to require {data_par.phys_pod_modes_to_save[i]+1} as well)")
             a_phys = np.load(data_par.complete_output_path+data_par.output_file_name+f"/a_phys_(mode_time)_m{fourier_family}.npy")[data_par.phys_pod_modes_to_save, :] # signature n,T
             Nt_P = a_phys.shape[-1]//data_par.number_shifts
-            # e_phys = np.square(a_phys).sum(-1)/Nt_P
-            e_phys = np.square(a_phys[:, :Nt_P]).sum(-1)/Nt_P
+            # e_phys = np.square(a_phys).sum(-1)/Nt_P/data_par.number_shifts
+            e_phys = np.load(data_par.complete_output_path+data_par.output_file_name+f"/spectrum_phys_m{fourier_family}.npy")[data_par.phys_pod_modes_to_save]
+            a_phys = a_phys[:, :Nt_P]
+
+            if consider_crossed_correlations:
+                dummy_a = a_phys[::2, :] + 1.j*a_phys[1::2, :]
+                a_phys = 2*dummy_a#*2*np.sqrt(2)
+                e_phys = e_phys[::2]
 
         if data_par.rank == 0:
             write_job_output(data_par.path_to_job_output,f'entering Fourier loop {num_mF//data_par.nb_proc_in_fourier+1}/{len(data_par.list_modes[data_par.rank_fourier::data_par.nb_proc_in_fourier])//data_par.nb_proc_in_fourier}')
@@ -70,50 +76,46 @@ def main_extract_modes(data_par):
                 fourier_pod_modes = None
                 local_nb_snapshots = None
                 previous_nb_snapshots = None  
-            if (mF,axis) != (0,"s"):
+            # if (mF,axis) != (0,"s"):
+            if (axis=='s' and (mF == 0 or consider_crossed_correlations)):
+                continue
 
-                if axis == 'c':
-                    fourier_type = 'cos'
-                elif axis == 's':
-                    fourier_type = 'sin'
-                counter_axis = list_axis[1-a]
+            if axis == 'c':
+                fourier_type = 'cos'
+            elif axis == 's':
+                fourier_type = 'sin'
+            counter_axis = list_axis[1-a]
 
-                if data_par.should_we_save_Fourier_POD:
-                    a_fourier = np.load(data_par.complete_output_path+data_par.output_file_name+f'/latents/{fourier_type}_mF{mF:03d}.npy') # shape n,T
-                    a_fourier = a_fourier[data_par.fourier_pod_modes_to_save] # name badly chose, fourier_pod_modes_to_save is an array containing the labels of the POD modes to save for each individual mF
-                    Nt_F = a_fourier.shape[-1]
-                    e_fourier = np.square(a_fourier).sum(-1)/Nt_F
-                for i,path_to_data in enumerate(data_par.paths_to_data):
+            if data_par.should_we_save_Fourier_POD:
+                a_fourier = np.load(data_par.complete_output_path+data_par.output_file_name+f'/latents/{fourier_type}_mF{mF:03d}.npy') # shape n,T
+                a_fourier = a_fourier[data_par.fourier_pod_modes_to_save] # name badly chose, fourier_pod_modes_to_save is an array containing the labels of the POD modes to save for each individual mF
+                Nt_F = a_fourier.shape[-1]
+                e_fourier = np.square(a_fourier).sum(-1)/Nt_F
+
+            for i,path_to_data in enumerate(data_par.paths_to_data):
+
+                sym_data = None
+                
+                if data_par.rank == 0:
+                    write_job_output(data_par.path_to_job_output,f'  Importing all of {path_to_data}')
+                for individual_path_to_data in path_to_data:
+                    new_data = import_data(data_par,mF,axis,[individual_path_to_data],data_par.field_name_in_file) #shape t (d n)
                     if data_par.rank == 0:
-                        write_job_output(data_par.path_to_job_output,f'  Importing all of {path_to_data}')
-                    for individual_path_to_data in path_to_data:
-                        new_data = import_data(data_par,mF,axis,[individual_path_to_data],data_par.field_name_in_file) #shape t (d n)
-                        if data_par.rank == 0:
-                            write_job_output(data_par.path_to_job_output,f'      Successfully imported {individual_path_to_data}')
-                        T_new_data = new_data.shape[0]
-                        N_space = new_data.shape[-1]
-                        if data_par.should_we_save_Fourier_POD and (fourier_pod_modes is None):
-                            fourier_pod_modes = np.zeros((a_fourier.shape[0], N_space))
-                        if data_par.should_we_save_phys_POD and (phys_pod_modes is None):
-                            if not consider_crossed_correlations:
-                                phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
-                            else:
-                                phys_pod_modes = np.zeros((a_phys.shape[0]//2, N_space))
-                        if (local_nb_snapshots is None) and (previous_nb_snapshots is None):
-                            local_nb_snapshots,previous_nb_snapshots = T_new_data,0
-                        else:
-                            local_nb_snapshots,previous_nb_snapshots = local_nb_snapshots+T_new_data,local_nb_snapshots
+                        write_job_output(data_par.path_to_job_output,f'      Successfully imported {individual_path_to_data}')
+                    # if consider_crossed_correlations:
+                    #     new_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file)
+                    T_new_data = new_data.shape[0]
+                    N_space = new_data.shape[-1]
+                    if (local_nb_snapshots is None) and (previous_nb_snapshots is None):
+                        local_nb_snapshots,previous_nb_snapshots = T_new_data,0
+                    else:
+                        local_nb_snapshots,previous_nb_snapshots = local_nb_snapshots+T_new_data,local_nb_snapshots
 
-                        if data_par.should_we_save_Fourier_POD:
-                            fourier_pod_modes += 1/(Nt_F*e_fourier[:,None]) * a_fourier[:,previous_nb_snapshots:local_nb_snapshots]@new_data
-                        if data_par.should_we_save_phys_POD:
-                            if not consider_crossed_correlations:
-                                phys_pod_modes += 1/(Nt_P*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots]@new_data
-                            else:
-                                coeff = 1*(axis=="c") + epsilon_correlations*(axis=='s')
-                                phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,previous_nb_snapshots:local_nb_snapshots]@new_data
-                        
-                        #============================================ Adding the symmetrized part when asked
+                    if data_par.should_we_save_Fourier_POD:
+                        if fourier_pod_modes is None:
+                            fourier_pod_modes = np.zeros((a_fourier.shape[0], N_space))
+                        fourier_pod_modes += 1/(Nt_F*e_fourier[:,None]) * a_fourier[:,previous_nb_snapshots:local_nb_snapshots]@new_data
+                        #========== ADDING MESH SYMMETRY
                         if data_par.should_we_add_mesh_symmetry:
                             if data_par.type_sym == 'Rpi':
                                 sym_tensor = np.array([1, -1, -1])
@@ -125,26 +127,41 @@ def main_extract_modes(data_par):
                             sym_coeff = (data_par.type_sym=='centro')*(-1)**mF + (data_par.type_sym=='Rpi')*(-1)**(axis=='s')
                             for d in range(data_par.D):
                                 sym_data[:, d, :] = sym_coeff*sym_tensor[d]*new_data[:, d, data_par.tab_pairs]
+                            
                             new_data = rearrange(new_data, "t d n -> t (d n)")
                             sym_data = rearrange(sym_data, "t d n -> t (d n)")
-                            if data_par.should_we_save_Fourier_POD:
-                                fourier_pod_modes += 1/(Nt_F*e_fourier[:,None]) * a_fourier[:,previous_nb_snapshots+Nt_F//2:local_nb_snapshots+Nt_F//2]@sym_data
-                            if data_par.should_we_save_phys_POD:
-                                if not consider_crossed_correlations:
-                                    phys_pod_modes += 1/(Nt_P*e_phys[:,None]) * a_phys[:,previous_nb_snapshots+Nt_P//2:local_nb_snapshots+Nt_P//2]@sym_data
-                                else:
-                                    coeff = 1*(axis=="c") + epsilon_correlations*(axis=='s')                  
-                                    phys_pod_modes += coeff/(Nt_P*e_phys[::2,None]) * a_phys[::2,previous_nb_snapshots+Nt_P//2:local_nb_snapshots+Nt_P//2]@sym_data
 
-                        #================================================ Adding crossed correlations when necessary
-                        if data_par.should_we_save_phys_POD and consider_crossed_correlations:
-                            new_data = import_data(data_par,mF,counter_axis,[individual_path_to_data],data_par.field_name_in_file) #shape t (d n) [with a being only shape 1]
-                            coeff = -1*(counter_axis=="c") + epsilon_correlations*(counter_axis=='s')
-                            phys_pod_modes += coeff/(Nt_P*e_phys[1::2,None]) * a_phys[1::2,previous_nb_snapshots:local_nb_snapshots]@new_data
+                            fourier_pod_modes += 1/(Nt_F*e_fourier[:,None]) * a_fourier[:,previous_nb_snapshots+Nt_F//2:local_nb_snapshots+Nt_F//2]@sym_data
 
+                    # if data_par.should_we_save_phys_POD:
+                    #     if phys_pod_modes is None:
+                    #         phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
+                    #     if consider_crossed_correlations:
+                    #         new_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file)
+                    #     phys_pod_modes = phys_pod_modes + 1/(Nt_P*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots]@new_data
 
-                        #============================================ Adding the symmetrized part when asked
-                            if data_par.should_we_add_mesh_symmetry:
+                    # if data_par.should_we_save_phys_POD and (phys_pod_modes is None):
+                    #     # if not consider_crossed_correlations:
+                    #     phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
+                        # else:
+                            # phys_pod_modes = np.zeros((a_phys.shape[0]//2, N_space))
+
+                        
+                    if data_par.should_we_save_phys_POD:
+                        # if consider_crossed_correlations
+                        # if not consider_crossed_correlations:
+                        if phys_pod_modes is None:
+                            phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
+                        if consider_crossed_correlations:
+                            complex_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file)
+                            new_data = complex_data
+                            del complex_data
+                            gc.collect()
+                        # phys_pod_modes = phys_pod_modes + 1/(Nt_P*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots]@new_data
+                        phys_pod_modes = phys_pod_modes + einsum(1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots], new_data, 'P T, T N -> P N')
+
+                        if data_par.should_we_add_mesh_symmetry:
+                            if (consider_crossed_correlations or not data_par.should_we_save_Fourier_POD):
                                 if data_par.type_sym == 'Rpi':
                                     sym_tensor = np.array([1, -1, -1])
                                 elif data_par.type_sym == 'centro':
@@ -152,68 +169,47 @@ def main_extract_modes(data_par):
 
                                 new_data = rearrange(new_data, "t (d n) -> t d n", d=data_par.D)
                                 sym_data = np.zeros(new_data.shape)
-                                sym_coeff = (data_par.type_sym=='centro')*(-1)**mF + (data_par.type_sym=='Rpi')*(-1)**(counter_axis=='s')
+                                sym_coeff = (data_par.type_sym=='centro')*(-1)**mF + (data_par.type_sym=='Rpi')*(-1)**(axis=='s')
                                 for d in range(data_par.D):
-                                    sym_data[:, d, :] = sym_coeff*sym_tensor[d]*new_data[:, d, data_par.tab_pairs]
-
+                                    if not (consider_crossed_correlations and data_par.type_sym=='Rpi'):
+                                        sym_data[:, d, :] = sym_coeff*sym_tensor[d]*new_data[:, d, data_par.tab_pairs]
+                                    else:
+                                        sym_data = sym_data.astype(np.complex128)
+                                        sym_data[:, d, :].real = sym_tensor[d]*new_data[:, d, data_par.tab_pairs].real #no change of sign for cosine (Rpi-sym)
+                                        sym_data[:, d, :].imag = -sym_tensor[d]*new_data[:, d, data_par.tab_pairs].imag #change sign for sine (Rpi-sym)
                                 new_data = rearrange(new_data, "t d n -> t (d n)")
                                 sym_data = rearrange(sym_data, "t d n -> t (d n)")
 
-                                phys_pod_modes += coeff/(Nt_P*e_phys[1::2,None]) * a_phys[1::2,previous_nb_snapshots+Nt_P//2:local_nb_snapshots+Nt_P//2]@sym_data
+                            phys_pod_modes = phys_pod_modes + 1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots+Nt_P//2:local_nb_snapshots+Nt_P//2]@sym_data
 
-                            # if data_par.should_we_save_Fourier_POD:
-                            #     epsilon_symmetry = np.sign((a_fourier[:,previous_nb_snapshots:local_nb_snapshots]*a_fourier[:,Nt_F//2+previous_nb_snapshots:Nt_F//2+local_nb_snapshots]).sum(-1))
-                            #     epsilon_symmetry = epsilon_symmetry.reshape(epsilon_symmetry.shape[0], 1)
-                            #     sym_coeff = (data_par.type_sym=='centro')*(-1)**mF + (data_par.type_sym=='Rpi')*(-1)**(axis=='s')
-                            #     fourier_pod_modes = rearrange(fourier_pod_modes,"t (d n) -> t d n",d=data_par.D)
-                            #     symmetrized_fourier = np.empty(fourier_pod_modes.shape)
-                            #     for d in range(data_par.D):
-                            #         symmetrized_fourier[:, d, :] = sym_coeff*sym_tensor[d]*fourier_pod_modes[:, d, data_par.tab_pairs]
-                            #     fourier_pod_modes = rearrange(fourier_pod_modes,"t d n -> t (d n)")
-                            #     symmetrized_fourier = rearrange(symmetrized_fourier,"t d n -> t (d n)")
-                            #     fourier_pod_modes += epsilon_symmetry*symmetrized_fourier
-                            #     del symmetrized_fourier
-                            #     gc.collect()
+            # end for i,path in enumerate(list_paths)
+            _, _, WEIGHTS, _ = data_par.for_building_symmetrized_weights
+            if data_par.should_we_save_Fourier_POD:
+                # normalization_factors = np.sum(fourier_pod_modes**2*(WEIGHTS.reshape(1, WEIGHTS.shape[0])), axis=1)
+                # fourier_pod_modes /= normalization_factors.reshape(normalization_factors.shape[0], 1)# rearrange(fourier_pod_modes,"t d n -> t (d n)")
+                for m_i in range(data_par.fourier_pod_modes_to_save.size):
+                    nP=data_par.fourier_pod_modes_to_save[m_i]
+                    np.save(data_par.complete_output_path+data_par.output_file_name+f"/fourier_pod_modes/mF_{mF:03d}_nP_{nP:03d}_{axis}",fourier_pod_modes[m_i])
+            
+            if data_par.should_we_save_phys_POD:
 
-                            # if data_par.should_we_save_phys_POD:
-                            #     if consider_crossed_correlations:
-                            #         epsilon_symmetry = np.sign((a_phys[::2,previous_nb_snapshots:local_nb_snapshots]*a_phys[::2,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]).sum(-1))
-                            #     else:
-                            #         epsilon_symmetry = np.sign((a_phys[:,previous_nb_snapshots:local_nb_snapshots]*a_phys[:,Nt_P//2+previous_nb_snapshots:Nt_P//2+local_nb_snapshots]).sum(-1))
-                            #     epsilon_symmetry = epsilon_symmetry.reshape(epsilon_symmetry.shape[0], 1)
-                            #     sym_coeff = (data_par.type_sym=='centro')*(-1)**mF + (data_par.type_sym=='Rpi')*(-1)**(axis=='s')
-                            #     raw_phys_pod_modes = rearrange(phys_pod_modes,"t (d n) -> t d n",d=data_par.D)
-                            #     symmetrized_phys = np.empty(raw_phys_pod_modes.shape)
-                            #     for d in range(data_par.D):
-                            #         symmetrized_phys[:, d, :] = sym_coeff*sym_tensor[d]*raw_phys_pod_modes[:, d, data_par.tab_pairs]
-                            #     symmetrized_phys = rearrange(symmetrized_phys,"t d n -> t (d n)")
-                            #     raw_phys_pod_modes = rearrange(raw_phys_pod_modes,"t d n -> t (d n)")
-                            #     phys_pod_modes = raw_phys_pod_modes + epsilon_symmetry*symmetrized_phys
+                for m_i, nP in enumerate(data_par.phys_pod_modes_to_save):
+                    # nP=data_par.phys_pod_modes_to_save[m_i]
+                    if not consider_crossed_correlations:
+                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i, :])
 
-                            #     del symmetrized_phys
-                            #     gc.collect()
-                # end for i,path in enumerate(list_paths)
-                _, _, WEIGHTS, _ = data_par.for_building_symmetrized_weights
-                if data_par.should_we_save_Fourier_POD:
-                    normalization_factors = np.sum(fourier_pod_modes**2*(WEIGHTS.reshape(1, WEIGHTS.shape[0])), axis=1)
-                    fourier_pod_modes /= normalization_factors.reshape(normalization_factors.shape[0], 1)# rearrange(fourier_pod_modes,"t d n -> t (d n)")
-                    for m_i in range(data_par.fourier_pod_modes_to_save.size):
-                        nP=data_par.fourier_pod_modes_to_save[m_i]
-                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/fourier_pod_modes/mF_{mF:03d}_nP_{nP:03d}_{axis}",fourier_pod_modes[m_i])
-                
-                if data_par.should_we_save_phys_POD:
-                    # normalization_factors = np.sum(phys_pod_modes**2*(WEIGHTS.reshape(1, WEIGHTS.shape[0])), axis=1)
-                    # phys_pod_modes /= normalization_factors.reshape(normalization_factors.shape[0], 1)
-                    for m_i, nP in enumerate(data_par.phys_pod_modes_to_save):
-                        # nP=data_par.phys_pod_modes_to_save[m_i]
-                        if not consider_crossed_correlations:
-                            np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i])
-                        elif m_i%2==0 and nP%2 == 0:
-                            coeff = +1*(axis=='c') - 1*(axis=='s')
-                            np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i//2])
-                            np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP+1:03d}_mF_{mF:03d}_{counter_axis}",coeff*phys_pod_modes[m_i//2])
-                        else:
-                            continue
+                    elif m_i%2==0:
+                        to_save = phys_pod_modes[m_i//2, :].real
+                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
+                        to_save = (1.j*phys_pod_modes[m_i//2, :]).real
+                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
+                    elif m_i%2 == 1:
+                        to_save = phys_pod_modes[(m_i-1)//2, :].imag
+                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
+                        to_save = (1.j*phys_pod_modes[(m_i-1)//2, :]).imag
+                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
+                    else:
+                        continue
         # end for axis in [cos,sin]
     # end for mF in MF
 
@@ -242,10 +238,10 @@ def switch_to_bins_format(data_par, sfem_par):
                     new_mode = np.zeros(data_par.D*data_par.R.shape[0])
                 pod_fourier_format[:, a::2, mF] = rearrange(new_mode, '(d n) -> n d', d=data_par.D)
         
-        normalization_factors = np.sum(pod_fourier_format**2*(W.reshape(W.shape[0], 1, 1)), axis=(0,1))
-        normalization_factors[1: ] /= 2
-        normalization_factors = normalization_factors.sum()
-        pod_fourier_format /= normalization_factors
+        # normalization_factors = np.sum(pod_fourier_format**2*(W.reshape(W.shape[0], 1, 1)), axis=(0,1))
+        # normalization_factors[1: ] /= 2
+        # normalization_factors = normalization_factors.sum()
+        # pod_fourier_format /= normalization_factors
         
         if data_par.bins_format == 'fourier':
             write_fourier(sfem_par,pod_fourier_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1)
