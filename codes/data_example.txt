@@ -124,6 +124,9 @@ False
 ===should_mean_field_computation_include_mesh_sym=== #only relevant when setting mesh symmetry to True and should_we_remove_mean_field to True
 True
 
+===should_mean_field_be_axisymmetric===
+True
+
 ######################  Parameters for saving POD modes (Second step)
 #################################################
 #################################################

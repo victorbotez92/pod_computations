@@ -17,7 +17,7 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
                 'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym',
                 'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format',
-                'should_we_modify_weights']
+                'should_we_modify_weights','should_mean_field_be_axisymmetric']
 list_chars = ['mesh_ext','path_to_mesh','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym',
               'bins_format','path_SFEMaNS_env','mesh_type','directory_scalar_for_weights']
@@ -235,6 +235,11 @@ class parameters:
             if not test:
                 should_mean_field_computation_include_mesh_sym = True
             self.should_mean_field_computation_include_mesh_sym = should_mean_field_computation_include_mesh_sym
+#######################################################
+            test, should_mean_field_be_axisymmetric = find_string(lines, 'should_mean_field_be_axisymmetric')
+            if not test:
+                should_mean_field_be_axisymmetric = True
+            self.should_mean_field_be_axisymmetric = should_mean_field_be_axisymmetric
 #######################################################
             test, should_we_modify_weights = find_string(lines, 'should_we_modify_weights')
             if not test:

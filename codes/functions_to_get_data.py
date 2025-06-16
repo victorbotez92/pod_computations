@@ -54,11 +54,14 @@ def apply_renormalization(par,data,path_to_data):
 ################################# IMPORTING MEAN FIELD
 
 def import_mean_field(par, mF, axis):
-    if par.should_mean_field_computation_include_mesh_sym:
-        char = 'mesh_sym'
+    if not (par.should_mean_field_be_axisymmetric and mF != 0):
+        if par.should_mean_field_computation_include_mesh_sym:
+            char = 'mesh_sym'
+        else:
+            char = 'no_mesh_sym'                    
+        return np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
     else:
-        char = 'no_mesh_sym'                    
-    return np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
+        return 0
 
 ################################# MAIN FUNCTION
 
