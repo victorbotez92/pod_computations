@@ -27,7 +27,6 @@ def main_extract_modes(data_par):
         data_par.fourier_pod_modes_to_save = np.arange(Nt_F)
         
     for num_mF,mF in enumerate(data_par.list_modes[data_par.rank_fourier::data_par.nb_proc_in_fourier]):
-    # for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier):
         if data_par.should_we_save_phys_POD:
             bool_found = False
             index_phys_mode = 0
@@ -49,7 +48,7 @@ def main_extract_modes(data_par):
                 bool_valid_nPs = data_par.phys_pod_modes_to_save.size%2==0
                 if not bool_valid_nPs:
                     raise Exception(ValueError, "Code considers crossed correlations: make sure the list of POD modes is of even size")
-                #  and np.array(data_par.phys_pod_modes_to_save) != 2*np.arange(data_par.phys_pod_modes_to_save.size//2):
+
                 for i in range(0, data_par.phys_pod_modes_to_save.size, 2):
                     if data_par.phys_pod_modes_to_save[i] + 1 != data_par.phys_pod_modes_to_save[i+1]:
                         bool_valid_nPs = False
@@ -57,13 +56,13 @@ def main_extract_modes(data_par):
                         raise Exception(ValueError, f"Code considers crossed correlations: make sure for all even nP mode the odd nP+1 is also present (here you required {data_par.phys_pod_modes_to_save[i]}, make sure to require {data_par.phys_pod_modes_to_save[i]+1} as well)")
             a_phys = np.load(data_par.complete_output_path+data_par.output_file_name+f"/a_phys_(mode_time)_m{fourier_family}.npy")[data_par.phys_pod_modes_to_save, :] # signature n,T
             Nt_P = a_phys.shape[-1]//data_par.number_shifts
-            # e_phys = np.square(a_phys).sum(-1)/Nt_P/data_par.number_shifts
+
             e_phys = np.load(data_par.complete_output_path+data_par.output_file_name+f"/spectrum_phys_m{fourier_family}.npy")[data_par.phys_pod_modes_to_save]
             a_phys = a_phys[:, :Nt_P]
 
             if consider_crossed_correlations:
                 dummy_a = a_phys[::2, :] + 1.j*a_phys[1::2, :]
-                a_phys = 2*dummy_a#*2*np.sqrt(2)
+                a_phys = dummy_a
                 e_phys = e_phys[::2]
 
         if data_par.rank == 0:
@@ -76,7 +75,7 @@ def main_extract_modes(data_par):
                 fourier_pod_modes = None
                 local_nb_snapshots = None
                 previous_nb_snapshots = None  
-            # if (mF,axis) != (0,"s"):
+
             if (axis=='s' and (mF == 0 or consider_crossed_correlations)):
                 continue
 
@@ -102,8 +101,6 @@ def main_extract_modes(data_par):
                     new_data = import_data(data_par,mF,axis,[individual_path_to_data],data_par.field_name_in_file) #shape t (d n)
                     if data_par.rank == 0:
                         write_job_output(data_par.path_to_job_output,f'      Successfully imported {individual_path_to_data}')
-                    # if consider_crossed_correlations:
-                    #     new_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file)
                     T_new_data = new_data.shape[0]
                     N_space = new_data.shape[-1]
                     if (local_nb_snapshots is None) and (previous_nb_snapshots is None):
@@ -133,23 +130,8 @@ def main_extract_modes(data_par):
 
                             fourier_pod_modes += 1/(Nt_F*e_fourier[:,None]) * a_fourier[:,previous_nb_snapshots+Nt_F//2:local_nb_snapshots+Nt_F//2]@sym_data
 
-                    # if data_par.should_we_save_phys_POD:
-                    #     if phys_pod_modes is None:
-                    #         phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
-                    #     if consider_crossed_correlations:
-                    #         new_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file)
-                    #     phys_pod_modes = phys_pod_modes + 1/(Nt_P*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots]@new_data
-
-                    # if data_par.should_we_save_phys_POD and (phys_pod_modes is None):
-                    #     # if not consider_crossed_correlations:
-                    #     phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
-                        # else:
-                            # phys_pod_modes = np.zeros((a_phys.shape[0]//2, N_space))
-
-                        
                     if data_par.should_we_save_phys_POD:
-                        # if consider_crossed_correlations
-                        # if not consider_crossed_correlations:
+
                         if phys_pod_modes is None:
                             phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
                         if consider_crossed_correlations:
@@ -157,7 +139,7 @@ def main_extract_modes(data_par):
                             new_data = complex_data
                             del complex_data
                             gc.collect()
-                        # phys_pod_modes = phys_pod_modes + 1/(Nt_P*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots]@new_data
+
                         phys_pod_modes = phys_pod_modes + einsum(1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots], new_data, 'P T, T N -> P N')
 
                         if data_par.should_we_add_mesh_symmetry:
@@ -185,8 +167,7 @@ def main_extract_modes(data_par):
             # end for i,path in enumerate(list_paths)
             _, _, WEIGHTS, _ = data_par.for_building_symmetrized_weights
             if data_par.should_we_save_Fourier_POD:
-                # normalization_factors = np.sum(fourier_pod_modes**2*(WEIGHTS.reshape(1, WEIGHTS.shape[0])), axis=1)
-                # fourier_pod_modes /= normalization_factors.reshape(normalization_factors.shape[0], 1)# rearrange(fourier_pod_modes,"t d n -> t (d n)")
+
                 for m_i in range(data_par.fourier_pod_modes_to_save.size):
                     nP=data_par.fourier_pod_modes_to_save[m_i]
                     np.save(data_par.complete_output_path+data_par.output_file_name+f"/fourier_pod_modes/mF_{mF:03d}_nP_{nP:03d}_{axis}",fourier_pod_modes[m_i])

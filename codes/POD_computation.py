@@ -49,11 +49,12 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
                     eigenvectors /= np.reshape(np.sqrt((np.abs(eigenvectors**2)).sum(0)),(1, Nt_int))   #renormalize eigenvectors
 
 
-        if consider_crossed_correlations:
-            eigenvectors = eigenvectors/np.sqrt(1/2*np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
-        else:
-            eigenvectors = eigenvectors/np.sqrt(np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
-
+        # if consider_crossed_correlations:
+        #     eigenvectors = eigenvectors/np.sqrt(1/2*np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
+        # else:
+        #     eigenvectors = eigenvectors/np.sqrt(np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
+        eigenvectors = eigenvectors/np.sqrt(np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
+        
         for m in range(par.number_shifts):
             full_eigenvectors[m*Nt_int:(m+1)*Nt_int, :] = np.exp(-2*1.j*np.pi*family/par.number_shifts*m)*eigenvectors
         if consider_crossed_correlations:
