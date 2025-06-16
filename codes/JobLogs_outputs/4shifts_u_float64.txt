@@ -1,7 +1,0 @@
-
-Initialization done successfully
-The data will be gathered as follows:
-[['restart_template_2/rep_all/binaries_out/u/', 'restart_template_3/rep_all/binaries_out/u/'], ['restart_template_4/rep_all/binaries_out/u/'], ['restart_template_2/rep_all/binaries_out/u/.shifted_0', 'restart_template_3/rep_all/binaries_out/u/.shifted_0'], ['restart_template_4/rep_all/binaries_out/u/.shifted_0'], ['restart_template_2/rep_all/binaries_out/u/.shifted_1', 'restart_template_3/rep_all/binaries_out/u/.shifted_1'], ['restart_template_4/rep_all/binaries_out/u/.shifted_1'], ['restart_template_2/rep_all/binaries_out/u/.shifted_2', 'restart_template_3/rep_all/binaries_out/u/.shifted_2'], ['restart_template_4/rep_all/binaries_out/u/.shifted_2']]
-=========================================================== BEGINNING MODES EXTRACTION
-entering Fourier loop 1/1
-=========================================================== FINISHED MODES EXTRACTION

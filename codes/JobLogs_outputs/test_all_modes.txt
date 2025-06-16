@@ -1,7 +1,0 @@
-
-Initialization done successfully
-The data will be gathered as follows:
-[['200samples_Re10000/']]
-=========================================================== BEGINNING MODES EXTRACTION
-entering Fourier loop 1/1
-=========================================================== FINISHED MODES EXTRACTION
