@@ -40,10 +40,10 @@ def init(data_file, parallelize = True):
 ########################################################################
 
     sys.path.append(par.path_SFEMaNS_env)
-    from read_write_SFEMaNS.read_stb import get_mesh
-    from mesh.load_mesh import define_mesh
-    from SFEMaNS_object.get_par import SFEMaNS_par
-
+    from read_write_SFEMaNS.read_stb import get_mesh_gauss
+    # from mesh.load_mesh import define_mesh
+    # from SFEMaNS_object.get_par import SFEMaNS_par
+    from SFEMaNS_object import define_mesh, SFEMaNS_par
 
 ########################################################################
 ########################################################################
@@ -223,7 +223,7 @@ def init(data_file, parallelize = True):
 ########################################################################
 ########################################################################
 
-    R, Z, W = get_mesh(sfem_par)
+    R, Z, W = get_mesh_gauss(sfem_par)
     par.R = R
     par.Z = Z
     if par.should_we_modify_weights:

@@ -116,7 +116,7 @@ def build_mean_field(par, mesh_type, paths_to_data):
                         #     if 'shifted' in path:
                         #         bool_shifted = True
                         # if not bool_shifted:
-                        new_data = import_data(par,mF,axis,several_paths_to_data,par.field_name_in_file,should_we_renormalize=False,building_mean_field=True) # shape t a (d n)
+                        new_data = import_data(par,mF,axis,several_paths_to_data,par.field_name_in_file,should_we_renormalize=False,building_mean_field=True) # shape t (d n)
                         if par.rank == 0:
                             write_job_output(par.path_to_job_output,f'      Successfully imported {several_paths_to_data}')
                         if not once_make_mean_field:
@@ -126,7 +126,7 @@ def build_mean_field(par, mesh_type, paths_to_data):
                             mean_data = mean_data + np.sum(new_data, axis = 0)
                             counter += np.shape(new_data)[0]
                     # end for several_paths_to_data in paths_to_data
-                    mean_data = mean_data[0,:]/counter
+                    mean_data /= counter
                     ### ==============================================================
                     ### applying symmetry when required
                     ### ==============================================================
