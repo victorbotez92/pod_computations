@@ -17,7 +17,8 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
                 'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym',
                 'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format',
-                'should_we_modify_weights','should_mean_field_be_axisymmetric']
+                'should_we_modify_weights','should_mean_field_be_axisymmetric',
+'read_from_gauss']
 list_chars = ['mesh_ext','path_to_mesh','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym',
               'bins_format','path_SFEMaNS_env','mesh_type','directory_scalar_for_weights']
@@ -345,6 +346,11 @@ class parameters:
             if not test:
                 bins_format = 'fourier'
             self.bins_format = bins_format
+#######################################################
+            test, read_from_gauss = find_string(lines, 'read_from_gauss')
+            if not test:
+                read_from_gauss = False
+            self.read_from_gauss = read_from_gauss
 
 
 

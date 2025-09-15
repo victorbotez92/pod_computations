@@ -241,6 +241,12 @@ def init(data_file, parallelize = True):
         W /= W.sum()
     WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
 
+    if not par.read_from_gauss:
+        mesh = define_mesh(par.path_to_mesh, par.mesh_type)
+        par.jj = mesh.jj
+        par.ww = mesh.ww
+        del mesh
+    
     if par.should_we_add_mesh_symmetry or par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric:
 ########################################################################
 #IMPORTING LIST_PAIRS

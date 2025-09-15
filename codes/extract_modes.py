@@ -25,7 +25,7 @@ def main_extract_modes(data_par):
         a_fourier = np.load(data_par.complete_output_path+data_par.output_file_name+f'/latents/cos_mF000.npy') # shape n,T
         Nt_F = a_fourier.shape[-1]
         data_par.fourier_pod_modes_to_save = np.arange(Nt_F)
-        
+    consider_crossed_correlations = True #important if nothing to be done   
     for num_mF,mF in enumerate(data_par.list_modes[data_par.rank_fourier::data_par.nb_proc_in_fourier]):
         if data_par.should_we_save_phys_POD:
             bool_found = False
@@ -198,46 +198,48 @@ def switch_to_bins_format(data_par, sfem_par):
 
     sys.path.append(data_par.path_SFEMaNS_env)
     from read_write_SFEMaNS.write_stb import write_fourier, write_phys
-    from read_write_SFEMaNS.read_stb import get_mesh
-    from vector_operations.FFT_IFFT import fourier_to_phys
+    from read_write_SFEMaNS.read_stb import get_mesh_gauss
+    from vector_manipulation.FFT_operations import fourier_to_phys
     
     nb_m = len(data_par.list_m_families)
     list_m_nP = [(num_m, nP) for num_m in range(nb_m) for nP in data_par.phys_pod_modes_to_save]
     path_out = data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/"
 
-    _, _, W = get_mesh(sfem_par)
+    _, _, W = get_mesh_gauss(sfem_par)
 
-    for i in range(data_par.rank, len(list_m_nP), data_par.size):
-        num_m, nP = list_m_nP[i]
-        m = data_par.list_m_families[num_m].min()
-        pod_fourier_format = np.zeros((len(data_par.R), 2*data_par.D, data_par.list_modes.max()+1))  #(N a*D MF)
-        for mF in data_par.list_m_families[num_m]:
-            for a, axis in enumerate(["c", "s"]):
-                if not(mF == 0 and axis == 's'):
-                    new_mode = np.load(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{m}_nP_{nP:03d}_mF_{mF:03d}_{axis}.npy")
-                else:
-                    new_mode = np.zeros(data_par.D*data_par.R.shape[0])
-                pod_fourier_format[:, a::2, mF] = rearrange(new_mode, '(d n) -> n d', d=data_par.D)
-        
-        # normalization_factors = np.sum(pod_fourier_format**2*(W.reshape(W.shape[0], 1, 1)), axis=(0,1))
-        # normalization_factors[1: ] /= 2
-        # normalization_factors = normalization_factors.sum()
-        # pod_fourier_format /= normalization_factors
-        
-        if data_par.bins_format == 'fourier':
-            write_fourier(sfem_par,pod_fourier_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1)
-        elif data_par.bins_format == 'phys':
-            pod_phys_format = fourier_to_phys(pod_fourier_format)
-            write_phys(sfem_par,pod_phys_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1)
+    if data_par.should_we_save_phys_POD:
 
-    if data_par.size > 1:
-        data_par.comm.Barrier()
-    for i in range(data_par.rank, len(list_m_nP), data_par.size):
-        num_m, nP = list_m_nP[i]
-        m = data_par.list_m_families[num_m].min()
-        for mF in data_par.list_m_families[num_m]:
-            for a, axis in enumerate(["c", "s"]):
-                to_remove = f"{data_par.complete_output_path+data_par.output_file_name}/phys_pod_modes/m_{m}_nP_{nP:03d}_mF_{mF:03d}_{axis}.npy"
-                if os.path.exists(to_remove):
-                    os.remove(to_remove)
+        for i in range(data_par.rank, len(list_m_nP), data_par.size):
+            num_m, nP = list_m_nP[i]
+            m = data_par.list_m_families[num_m].min()
+            pod_fourier_format = np.zeros((len(data_par.R), 2*data_par.D, data_par.list_modes.max()+1))  #(N a*D MF)
+            for mF in data_par.list_m_families[num_m]:
+                for a, axis in enumerate(["c", "s"]):
+                    if not(mF == 0 and axis == 's'):
+                        new_mode = np.load(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{m}_nP_{nP:03d}_mF_{mF:03d}_{axis}.npy")
+                    else:
+                        new_mode = np.zeros(data_par.D*data_par.R.shape[0])
+                    pod_fourier_format[:, a::2, mF] = rearrange(new_mode, '(d n) -> n d', d=data_par.D)
+            
+            # normalization_factors = np.sum(pod_fourier_format**2*(W.reshape(W.shape[0], 1, 1)), axis=(0,1))
+            # normalization_factors[1: ] /= 2
+            # normalization_factors = normalization_factors.sum()
+            # pod_fourier_format /= normalization_factors
+            
+            if data_par.bins_format == 'fourier':
+                write_fourier(sfem_par,pod_fourier_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1)
+            elif data_par.bins_format == 'phys':
+                pod_phys_format = fourier_to_phys(pod_fourier_format)
+                write_phys(sfem_par,pod_phys_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1)
     
+        if data_par.size > 1:
+            data_par.comm.Barrier()
+        for i in range(data_par.rank, len(list_m_nP), data_par.size):
+            num_m, nP = list_m_nP[i]
+            m = data_par.list_m_families[num_m].min()
+            for mF in data_par.list_m_families[num_m]:
+                for a, axis in enumerate(["c", "s"]):
+                    to_remove = f"{data_par.complete_output_path+data_par.output_file_name}/phys_pod_modes/m_{m}_nP_{nP:03d}_mF_{mF:03d}_{axis}.npy"
+                    if os.path.exists(to_remove):
+                        os.remove(to_remove)
+       

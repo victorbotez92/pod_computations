@@ -20,10 +20,10 @@ if par.rank == 0:
 ########################################################################
 ########################################################################
 
-sys.path.append(par.path_SFEMaNS_env)
-from read_write_SFEMaNS.read_stb import get_mesh
-from mesh.load_mesh import define_mesh
-from SFEMaNS_object.get_par import SFEMaNS_par
+#sys.path.append(par.path_SFEMaNS_env)
+#from read_write_SFEMaNS.read_stb import get_mesh
+#from mesh.load_mesh import define_mesh
+#from SFEMaNS_object.get_par import SFEMaNS_par
 
 ########################################################################
 ########################################################################

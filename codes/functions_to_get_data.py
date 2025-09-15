@@ -1,4 +1,4 @@
-import os,array
+import os,array,sys
 
 import numpy as np
 from einops import rearrange
@@ -6,6 +6,8 @@ from einops import rearrange
 #####################################################
 from read_restart_sfemans import get_data_from_suites
 from basic_functions import write_job_output
+
+
 #####################################################
 
 def get_size(path):
@@ -20,26 +22,51 @@ def get_file(path,n):
     return data
 
 # @jit(forceobj=True)
+#def get_data(path_to_suite,field,mesh_type,mF,D,S,T,N,axis,type_float = np.float64):
+#    N_tot = np.sum(np.array(N))
+#    N_slice=np.cumsum(np.array(N)//T)
+#    data = np.zeros(shape=(T,D,N_tot//T),dtype=type_float)
+#    for s in range(S):
+#        n = N[s]
+#        for d in range(D):
+#            # for a,axis in enumerate(fourier_type):
+#            if D > 1:
+#                path=path_to_suite+"/fourier_{f}{i}{ax}_S{s:04d}_F{m:04d}".format(f=field,i=d+1,ax=axis,s=s,m=mF)+mesh_type
+#            elif D == 1:
+#                path=path_to_suite+"/fourier_{f}{ax}_S{s:04d}_F{m:04d}".format(f=field,ax=axis,s=s,m=mF)+mesh_type
+#
+#            new_data = np.array(get_file(path,n),dtype=type_float)
+#            new_data = rearrange(new_data, '(T N) -> T N', T=T)#new_data.reshape(T,len(new_data)//T)
+#            if s==0:
+#                data[:,d,:N_slice[s]]=np.copy(new_data)
+#            else:
+#                data[:,d,N_slice[s-1]:N_slice[s]]=np.copy(new_data)
+#    return data
 def get_data(path_to_suite,field,mesh_type,mF,D,S,T,N,axis,type_float = np.float64):
     N_tot = np.sum(np.array(N))
     N_slice=np.cumsum(np.array(N)//T)
     data = np.zeros(shape=(T,D,N_tot//T),dtype=type_float)
+    if axis == 'c':
+        a = 0
+    elif axis == 's':
+        a = 1
+    else:
+        raise ValueError(f"error in value of axis (found {axis}, should be c or s)")
     for s in range(S):
-        n = N[s]
-        for d in range(D):
+        n = N[s]*2*D
             # for a,axis in enumerate(fourier_type):
-            if D > 1:
-                path=path_to_suite+"/fourier_{f}{i}{ax}_S{s:04d}_F{m:04d}".format(f=field,i=d+1,ax=axis,s=s,m=mF)+mesh_type
-            elif D == 1:
-                path=path_to_suite+"/fourier_{f}{ax}_S{s:04d}_F{m:04d}".format(f=field,ax=axis,s=s,m=mF)+mesh_type
+        path=path_to_suite+"/fourier_{f}_S{s:04d}_F{m:04d}".format(f=field,s=s,m=mF)+mesh_type
 
-            new_data = np.array(get_file(path,n),dtype=type_float)
-            new_data = rearrange(new_data, '(T N) -> T N', T=T)#new_data.reshape(T,len(new_data)//T)
-            if s==0:
-                data[:,d,:N_slice[s]]=np.copy(new_data)
-            else:
-                data[:,d,N_slice[s-1]:N_slice[s]]=np.copy(new_data)
-    return data
+        new_data = np.array(get_file(path,n),dtype=type_float)
+        new_data = rearrange(new_data, '(T d N) -> T N d', T=T, d=D*2)#new_data.reshape(T,len(new_data)//T)
+        new_data = new_data[:, :, a::2]
+        if s==0:
+        #    data[:,d,:N_slice[s]]=np.copy(new_data)
+            data = np.copy(new_data)
+        else:
+            data = np.hstack((data, new_data))
+        #    data[:,d,N_slice[s-1]:N_slice[s]]=np.copy(new_data)
+    return rearrange(data, 'T N d -> T d N')
 
 ################################# EFFECTIVELY APPLYING RENORMALIZATION
 
@@ -66,7 +93,7 @@ def import_mean_field(par, mF, axis):
 ################################# MAIN FUNCTION
 
 def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renormalize=True,building_mean_field=False): # the last parameter is set to False only when creating the normalization coefficients
-    size_mesh = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+    #size_mesh = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
     ####################################################### IMPORTING SUCCESSIVELY ALL PATHS TO DEAL WITH AS ONE
     paths_to_data = []
     for num,raw_path_to_data in enumerate(raw_paths_to_data):
@@ -95,10 +122,16 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
                 new_data = new_data[...,1::2]
             new_data = rearrange(new_data,"t n d -> t (d n)")[:,None,:]
         else:
-            if par.D > 1:
-                N = [get_size(par.path_to_suites+path_to_data+f"/fourier_{field_name_in_file}1c_S{s:04d}_F0000"+par.mesh_ext) for s in range(par.S) ]# get file size for fast import
-            elif par.D == 1:
-                N = [get_size(par.path_to_suites+path_to_data+f"/fourier_{field_name_in_file}c_S{s:04d}_F0000"+par.mesh_ext) for s in range(par.S) ]# get file size for fast import
+            N = np.array([get_size(par.path_to_suites+path_to_data+f"/fourier_{field_name_in_file}_S{s:04d}_F0000"+par.mesh_ext) for s in range(par.S) ])//par.D//2
+            if par.read_from_gauss:
+                size_mesh = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+            else:
+                size_mesh = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_rr_node_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+
+#            if par.D > 1:
+#                N = [get_size(par.path_to_suites+path_to_data+f"/fourier_{field_name_in_file}1c_S{s:04d}_F0000"+par.mesh_ext) for s in range(par.S) ]# get file size for fast import
+#            elif par.D == 1:
+#                N = [get_size(par.path_to_suites+path_to_data+f"/fourier_{field_name_in_file}c_S{s:04d}_F0000"+par.mesh_ext) for s in range(par.S) ]# get file size for fast import
             tab_snapshots_per_suites = [N[s]/size_mesh[s] for s in range(par.S)]
             for i in range(1,len(tab_snapshots_per_suites)):
                 try:
@@ -109,6 +142,13 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
             snapshots_per_suite = int(tab_snapshots_per_suites[0])
             new_data = get_data(par.path_to_suites+path_to_data,
             field_name_in_file,par.mesh_ext,mF,par.D,par.S,snapshots_per_suite,N,axis,type_float = par.type_float)
+            if not par.read_from_gauss:
+                sys.path.append(par.path_SFEMaNS_env)
+                from vector_manipulation.operators import nodes_to_gauss
+                new_data = rearrange(new_data, 'T d n -> n d T')
+                new_data = nodes_to_gauss(new_data, par)
+                new_data = rearrange(new_data, 'n d T -> T d n')
+
             new_data = rearrange(new_data,"t d n -> t (d n) ")
 
         ############################ APPLYING THE TRANSFORMATIONS THAT ARE REQUIRED

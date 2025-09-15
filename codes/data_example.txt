@@ -118,6 +118,9 @@ False
 #################################################
 #################################################
 
+===read_from_gauss===
+True
+
 ===should_we_remove_mean_field=== #this will compute the avg field of each Fourier component and then remove it from the field (NOT WORKING)
 False
 
