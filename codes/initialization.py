@@ -3,7 +3,7 @@ import os
 from mpi4py import MPI
 
 import numpy as np
-
+from einops import rearrange,einsum
 
 ########################################################################
 from read_data import parameters
@@ -223,9 +223,28 @@ def init(data_file, parallelize = True):
 ########################################################################
 ########################################################################
 
-    R, Z, W = get_mesh_gauss(sfem_par)
-    par.R = R
-    par.Z = Z
+    if not par.read_from_gauss:
+        mesh = define_mesh(par.path_to_mesh, par.mesh_type)
+        par.jj = mesh.jj
+        par.ww = mesh.ww
+        
+        R = einsum(mesh.R[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
+        R = rearrange(R, 'l_G me -> (me l_G)')
+        par.R = R
+        
+        Z = einsum(mesh.Z[mesh.jj], mesh.ww, 'nw me, nw l_G -> l_G me')
+        Z = rearrange(Z, 'l_G me -> (me l_G)')
+        par.Z = Z
+
+        W = einsum(mesh.R[mesh.jj], mesh.ww, mesh.rj, 'nw me, nw l_G, l_G me -> l_G me')
+        W = rearrange(W, 'l_G me -> (me l_G)')
+        par.W = W
+     
+        del mesh
+    
+    #R, Z, W = get_mesh_gauss(sfem_par)
+    #par.R = R
+    #par.Z = Z
     if par.should_we_modify_weights:
         if par.directory_scalar_for_weights == '':
             raise ValueError(f"You chose to modify weights but specified wrong path for weights: {par.directory_scalar_for_weights}")
@@ -241,25 +260,43 @@ def init(data_file, parallelize = True):
         W /= W.sum()
     WEIGHTS = np.array([W for _ in range(D)]).reshape(-1) 
 
-    if not par.read_from_gauss:
-        mesh = define_mesh(par.path_to_mesh, par.mesh_type)
-        par.jj = mesh.jj
-        par.ww = mesh.ww
-        del mesh
+#    if not par.read_from_gauss:
+#        mesh = define_mesh(par.path_to_mesh, par.mesh_type)
+#        par.jj = mesh.jj
+#        par.ww = mesh.ww
+#        del mesh
     
     if par.should_we_add_mesh_symmetry or par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric:
 ########################################################################
 #IMPORTING LIST_PAIRS
 ########################################################################
         # ADAPT WHEN USING SEVERAL PROCS IN MERIDIAN
-        pairs=f"list_pairs_{mesh_type}.npy"
-        list_pairs = np.load(par.path_to_mesh+pairs)
-        tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
-        for elm in list_pairs:
-            index,sym_index = elm
-            tab_pairs[index] = int(sym_index)
-            tab_pairs[sym_index] = int(index)
+        epsilon_z_0 = 1e-7
+        
+        partial_sort = np.argsort(R**3+Z**2)
+        mask_z_is_not_0 = np.abs(Z[partial_sort])>epsilon_z_0
+        
+        flip_partial_sort = np.copy(partial_sort)
+        restriction_z_is_not_0 = np.zeros(mask_z_is_not_0.sum(), dtype=np.int32)
+        
+        restriction_z_is_not_0[1::2] = partial_sort[mask_z_is_not_0][::2]
+        restriction_z_is_not_0[::2] = partial_sort[mask_z_is_not_0][1::2]
+        
+        flip_partial_sort[mask_z_is_not_0] = restriction_z_is_not_0
+        
+        inverse_partial_sort = np.empty(partial_sort.shape[0],dtype=np.int32)
+        inverse_partial_sort[partial_sort] = np.arange(partial_sort.shape[0])
+        
+        tab_pairs = flip_partial_sort[inverse_partial_sort]
         par.tab_pairs = tab_pairs
+#        pairs=f"list_pairs_{mesh_type}.npy"
+#        list_pairs = np.load(par.path_to_mesh+pairs)
+#        tab_pairs = np.empty(2*len(list_pairs),dtype=np.int64)
+#        for elm in list_pairs:
+#            index,sym_index = elm
+#            tab_pairs[index] = int(sym_index)
+#            tab_pairs[sym_index] = int(index)
+#        par.tab_pairs = tab_pairs
 ########################################################################
 #CREATING SYMMETRIZED WEIGHTS
 ########################################################################
@@ -277,15 +314,18 @@ def init(data_file, parallelize = True):
         WEIGHTS_with_symmetry = np.array([relative_signs[d]*W for d in range(D)]).reshape(-1)  
         rows = []
         columns = []
-        for elm in list_pairs:
-            index,sym_index = elm
-            rows.append(index)
-            columns.append(sym_index)
-            rows.append(sym_index)
-            columns.append(index)
-        rows = np.array(rows)
-        columns = np.array(columns)
+#        for elm in list_pairs:
+#            index,sym_index = elm
+#            rows.append(index)
+#            columns.append(sym_index)
+#            rows.append(sym_index)
+#            columns.append(index)
+        
+#        rows = np.array(rows)
+#        columns = np.array(columns)
 
+        rows = np.arange(tab_pairs.shape[0])
+        columns = np.copy(tab_pairs)
         for_building_symmetrized_weights = (rows,columns,WEIGHTS,WEIGHTS_with_symmetry)
 
     else:

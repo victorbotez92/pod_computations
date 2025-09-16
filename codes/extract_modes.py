@@ -205,8 +205,8 @@ def switch_to_bins_format(data_par, sfem_par):
     list_m_nP = [(num_m, nP) for num_m in range(nb_m) for nP in data_par.phys_pod_modes_to_save]
     path_out = data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/"
 
-    _, _, W = get_mesh_gauss(sfem_par)
-
+    #_, _, W = get_mesh_gauss(sfem_par)
+    W = data_par.W
     if data_par.should_we_save_phys_POD:
 
         for i in range(data_par.rank, len(list_m_nP), data_par.size):

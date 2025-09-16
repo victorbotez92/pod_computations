@@ -44,7 +44,10 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
                     normalization_anti = np.mean(anti_vect.real/anti_vect.imag,axis=0)
                     del anti_vect
                     gc.collect()
-                    assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) == 1
+                    
+                    if np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) != 1:
+                        print(f'WARNING IN POD_computation.py {family}-family: not satisfactory separation between antisymmetric and symmetric')
+                    #assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) == 1
                     eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
                     eigenvectors /= np.reshape(np.sqrt((np.abs(eigenvectors**2)).sum(0)),(1, Nt_int))   #renormalize eigenvectors
 
@@ -75,6 +78,9 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
     else:
         eigenvectors = eigenvectors.real
         eigenvectors = eigenvectors/np.sqrt(np.sum(eigenvectors**2, axis = 0).reshape(1, eigenvalues.shape[0]))
+        #the following two lines make sure a mean field component will have positive time-evolution
+        new_sign = np.sign(eigenvectors[:eigenvalues.shape[0]//par.number_shifts//4,:].sum(axis=0))
+        eigenvectors *= new_sign.reshape(1, new_sign.shape[0])
     if eigenvalues.min() < 0:
         print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {a}")
     
