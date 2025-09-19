@@ -12,7 +12,7 @@
 ===nb_bits=== #either 32 or 64
 64
 
-===path_SFEMaNS_env===
+===path_SFEMaNS_env===   #disabled
 /Users/Utilisateur/OneDrive/Bureau/SFEMaNS_env/SFEMaNS_env
 
 ##################### Data for computing POD latents (first step)
@@ -121,7 +121,7 @@ False
 ===read_from_gauss===
 True
 
-===should_we_remove_mean_field=== #this will compute the avg field of each Fourier component and then remove it from the field (NOT WORKING)
+===should_we_remove_mean_field=== #this will compute the avg field of each Fourier component and then remove it from the field 
 False
 
 ===should_mean_field_computation_include_mesh_sym=== #only relevant when setting mesh symmetry to True and should_we_remove_mean_field to True
@@ -190,3 +190,6 @@ True
 
 ===bins_format=== #either fourier or phys
 fourier
+
+===should_we_do_all_post_tests=== #Tests relations latents <-> spectrum; modes orthonormality; modes projections
+True

@@ -96,11 +96,12 @@ def build_mean_field(par, mesh_type, paths_to_data):
                     char = 'mesh_sym'
                 else:
                     char = 'no_mesh_sym'
+                MF_output = par.complete_output_path + f'/mean_field_{char}/'
                 ### ==============================================================
                 ### Checking mean field calculation has not already been done
                 ### ==============================================================
-                os.makedirs(f"{par.path_to_suites}/mean_field_{char}/",exist_ok=True)
-                if os.path.exists(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy'): # the calculations are not made if it was already done before
+                os.makedirs(MF_output,exist_ok=True)
+                if os.path.exists(f'{MF_output}/mF{mF}_{axis}.npy'): # the calculations are not made if it was already done before
                     if par.rank == 0:
                         write_job_output(par.path_to_job_output,f'mean field already computed for mF = {mF}, axis {axis} for {char}')
                 else:
@@ -119,7 +120,8 @@ def build_mean_field(par, mesh_type, paths_to_data):
                         new_data = import_data(par,mF,axis,several_paths_to_data,par.field_name_in_file,should_we_renormalize=False,building_mean_field=True) # shape t (d n)
                         if par.rank == 0:
                             write_job_output(par.path_to_job_output,f'      Successfully imported {several_paths_to_data}')
-                        if not once_make_mean_field:
+                        if once_make_mean_field == False:
+                            once_make_mean_field = True
                             mean_data = np.sum(new_data, axis = 0)
                             counter = np.shape(new_data)[0]
                         else:
@@ -149,7 +151,7 @@ def build_mean_field(par, mesh_type, paths_to_data):
                     ### ==============================================================
                     ### saving calculated mean field
                     ### ==============================================================
-                    np.save(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy',mean_data) # has shape (d n)
+                    np.save(f'{MF_output}/mF{mF}_{axis}.npy',mean_data) # has shape (d n)
                 # end if os.path.exist
             # end for a in list_axis
     # end for mF in MF

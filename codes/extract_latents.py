@@ -98,13 +98,11 @@ def main_extract_latents(par):
                     list_correlations = [np.zeros(correlation.shape, dtype=np.complex128) for _ in par.list_m_families]
 
                 if mF == 0:
-                    list_correlations[index_correlation] += correlation/(par.number_shifts)**2
-                    # if consider_crossed_correlations:
-                    #     list_correlations[index_correlation] += 2*1.j*epsilon_correlations*crossed_correlations
+                    list_correlations[index_correlation] += correlation
                 else:
-                    list_correlations[index_correlation] += par.type_float(1/2)*correlation/(par.number_shifts)**2
+                    list_correlations[index_correlation] += par.type_float(1/2)*correlation
                     if consider_crossed_correlations:
-                        list_correlations[index_correlation] += 1.j*epsilon_correlations*crossed_correlations/(par.number_shifts)**2
+                        list_correlations[index_correlation] += 1.j*epsilon_correlations*crossed_correlations
 
             if axis == 's' and mF == 0:
                 del correlation
@@ -155,15 +153,19 @@ def main_extract_latents(par):
                         else:
                             epsilon_correlations = -1
 
-                    pod_a = compute_POD_features(par,1/2*(list_correlations[i]+np.conjugate(list_correlations[i].T)),family=m,consider_crossed_correlations=consider_crossed_correlations)
+                    #pod_a = compute_POD_features(par,1/2*(list_correlations[i]+np.conjugate(list_correlations[i].T)),family=m,consider_crossed_correlations=consider_crossed_correlations)
+                    if consider_crossed_correlations:
+                #first 1/2 => because of 1/4 and other 1/2 above
+                #second 1/2 => because of symmetrization of matrix
+                        pod_a = compute_POD_features(par,1/2*1/2*(list_correlations[i]+np.conjugate(list_correlations[i].T)),family=m,consider_crossed_correlations=consider_crossed_correlations)
+                    else:
+                        pod_a = compute_POD_features(par,list_correlations[i],family=m,consider_crossed_correlations=consider_crossed_correlations)
                     list_pod_a.append(pod_a)
-                    # if par.number_shifts > 1:
                     save_pod(par,pod_a,family=m)
                     write_job_output(par.path_to_job_output,f'succesfully saved spectra for symetrized suites (phys POD) of family {m}')
 
     ######################################## OPTIONAL SAVINGS
                     if par.should_we_save_phys_correlation:
-                        # np.save(par.complete_output_path+'/'+par.output_file_name+f'/phys_correlation.npy',cumulated_correlation)
                         np.save(par.complete_output_path+'/'+par.output_file_name+f'/phys_correlation_m{m}.npy',list_correlations[i])
             if par.rank_fourier == 0:
                 all_eigvals = [pod.eigvals for pod in list_pod_a]

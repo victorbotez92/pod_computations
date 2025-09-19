@@ -12,6 +12,13 @@ import numpy as np
 from functions_to_get_data import import_data
 from basic_functions import write_job_output
 import os,sys
+
+
+sys.path.append('/gpfs/users/botezv/.venv')
+from SFEMaNS_env.write_stb import write_fourier, write_phys
+from SFEMaNS_env.FFT_operations import fourier_to_phys
+from SFEMaNS_env.operators import gauss_to_nodes
+
 ###############################
 
 def main_extract_modes(data_par):
@@ -140,7 +147,9 @@ def main_extract_modes(data_par):
                             del complex_data
                             gc.collect()
 
-                        phys_pod_modes = phys_pod_modes + einsum(1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots], new_data, 'P T, T N -> P N')
+                        #phys_pod_modes = phys_pod_modes + einsum(1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots], new_data, 'P T, T N -> P N')
+                         # fixing latex calculation mistake
+                        phys_pod_modes = phys_pod_modes + data_par.number_shifts*einsum(1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots], new_data, 'P T, T N -> P N')
 
                         if data_par.should_we_add_mesh_symmetry:
                             if (consider_crossed_correlations or not data_par.should_we_save_Fourier_POD):
@@ -162,7 +171,9 @@ def main_extract_modes(data_par):
                                 new_data = rearrange(new_data, "t d n -> t (d n)")
                                 sym_data = rearrange(sym_data, "t d n -> t (d n)")
 
-                            phys_pod_modes = phys_pod_modes + 1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots+Nt_P//2:local_nb_snapshots+Nt_P//2]@sym_data
+                         # fixing latex calculation mistake
+                            #phys_pod_modes = phys_pod_modes + 1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots+Nt_P//2:local_nb_snapshots+Nt_P//2]@sym_data
+                            phys_pod_modes = phys_pod_modes + data_par.number_shifts*1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots+Nt_P//2:local_nb_snapshots+Nt_P//2]@sym_data
 
             # end for i,path in enumerate(list_paths)
             _, _, WEIGHTS, _ = data_par.for_building_symmetrized_weights
@@ -180,15 +191,23 @@ def main_extract_modes(data_par):
                         np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i, :])
 
                     elif m_i%2==0:
-                        to_save = phys_pod_modes[m_i//2, :].real
+                        to_save = 1/2*phys_pod_modes[m_i//2, :].real
                         np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
-                        to_save = (1.j*phys_pod_modes[m_i//2, :]).real
+                        to_save = 1/2*(-1.j*phys_pod_modes[m_i//2, :]).real
                         np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
+#                        to_save = phys_pod_modes[m_i//2, :].real
+#                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
+#                        to_save = (-1.j*phys_pod_modes[m_i//2, :]).real
+#                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
                     elif m_i%2 == 1:
-                        to_save = phys_pod_modes[(m_i-1)//2, :].imag
+                        to_save = 1/2*phys_pod_modes[(m_i-1)//2, :].imag
                         np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
-                        to_save = (1.j*phys_pod_modes[(m_i-1)//2, :]).imag
+                        to_save = 1/2*(-1.j*phys_pod_modes[(m_i-1)//2, :]).imag
                         np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
+#                        to_save = phys_pod_modes[(m_i-1)//2, :].imag
+#                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
+#                        to_save = (-1.j*phys_pod_modes[(m_i-1)//2, :]).imag
+#                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
                     else:
                         continue
         # end for axis in [cos,sin]
@@ -196,16 +215,10 @@ def main_extract_modes(data_par):
 
 def switch_to_bins_format(data_par, sfem_par):
 
-    sys.path.append(data_par.path_SFEMaNS_env)
-    from read_write_SFEMaNS.write_stb import write_fourier, write_phys
-    from read_write_SFEMaNS.read_stb import get_mesh_gauss
-    from vector_manipulation.FFT_operations import fourier_to_phys
-    
     nb_m = len(data_par.list_m_families)
     list_m_nP = [(num_m, nP) for num_m in range(nb_m) for nP in data_par.phys_pod_modes_to_save]
     path_out = data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/"
 
-    #_, _, W = get_mesh_gauss(sfem_par)
     W = data_par.W
     if data_par.should_we_save_phys_POD:
 
@@ -225,9 +238,9 @@ def switch_to_bins_format(data_par, sfem_par):
             # normalization_factors[1: ] /= 2
             # normalization_factors = normalization_factors.sum()
             # pod_fourier_format /= normalization_factors
-            
+            pod_fourier_format = gauss_to_nodes(pod_fourier_format, data_par, W)
             if data_par.bins_format == 'fourier':
-                write_fourier(sfem_par,pod_fourier_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1)
+                write_fourier(sfem_par,pod_fourier_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1,from_gauss=False)
             elif data_par.bins_format == 'phys':
                 pod_phys_format = fourier_to_phys(pod_fourier_format)
                 write_phys(sfem_par,pod_phys_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1)

@@ -7,7 +7,8 @@ from einops import rearrange
 from read_restart_sfemans import get_data_from_suites
 from basic_functions import write_job_output
 
-
+sys.path.append('/gpfs/users/botezv/.venv')
+from SFEMaNS_env.operators import nodes_to_gauss
 #####################################################
 
 def get_size(path):
@@ -61,11 +62,9 @@ def get_data(path_to_suite,field,mesh_type,mF,D,S,T,N,axis,type_float = np.float
         new_data = rearrange(new_data, '(T d N) -> T N d', T=T, d=D*2)#new_data.reshape(T,len(new_data)//T)
         new_data = new_data[:, :, a::2]
         if s==0:
-        #    data[:,d,:N_slice[s]]=np.copy(new_data)
             data = np.copy(new_data)
         else:
             data = np.hstack((data, new_data))
-        #    data[:,d,N_slice[s-1]:N_slice[s]]=np.copy(new_data)
     return rearrange(data, 'T N d -> T d N')
 
 ################################# EFFECTIVELY APPLYING RENORMALIZATION
@@ -81,12 +80,21 @@ def apply_renormalization(par,data,path_to_data):
 ################################# IMPORTING MEAN FIELD
 
 def import_mean_field(par, mF, axis):
-    if not (par.should_mean_field_be_axisymmetric and mF != 0):
+    bool_import_mean_field = False
+    if par.should_mean_field_be_axisymmetric and mF==0:
+        bool_import_mean_field = True
+    elif par.should_mean_field_be_axisymmetric == False:
+        if par.number_shifts>1 and par.should_mean_field_computation_include_mesh_sym and (mF in par.list_m_families[0]):
+            bool_import_mean_field = True
+        elif par.number_shifts == 1:
+            bool_import_mean_field = True
+
+    if bool_import_mean_field == True:
         if par.should_mean_field_computation_include_mesh_sym:
             char = 'mesh_sym'
         else:
             char = 'no_mesh_sym'                    
-        return np.load(par.path_to_suites+f'/mean_field_{char}/mF{mF}_{axis}.npy')
+        return np.load(par.complete_output_path+f'/mean_field_{char}/mF{mF}_{axis}.npy')
     else:
         return 0
 
@@ -128,10 +136,6 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
             else:
                 size_mesh = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}mesh_rr_node_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
 
-#            if par.D > 1:
-#                N = [get_size(par.path_to_suites+path_to_data+f"/fourier_{field_name_in_file}1c_S{s:04d}_F0000"+par.mesh_ext) for s in range(par.S) ]# get file size for fast import
-#            elif par.D == 1:
-#                N = [get_size(par.path_to_suites+path_to_data+f"/fourier_{field_name_in_file}c_S{s:04d}_F0000"+par.mesh_ext) for s in range(par.S) ]# get file size for fast import
             tab_snapshots_per_suites = [N[s]/size_mesh[s] for s in range(par.S)]
             for i in range(1,len(tab_snapshots_per_suites)):
                 try:
@@ -143,8 +147,6 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
             new_data = get_data(par.path_to_suites+path_to_data,
             field_name_in_file,par.mesh_ext,mF,par.D,par.S,snapshots_per_suite,N,axis,type_float = par.type_float)
             if not par.read_from_gauss:
-                sys.path.append(par.path_SFEMaNS_env)
-                from vector_manipulation.operators import nodes_to_gauss
                 new_data = rearrange(new_data, 'T d n -> n d T')
                 new_data = nodes_to_gauss(new_data, par)
                 new_data = rearrange(new_data, 'n d T -> T d n')
@@ -156,7 +158,7 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
         if should_we_renormalize and par.is_the_field_to_be_renormalized_by_its_L2_norm:
             new_data = apply_renormalization(par,new_data,path_to_data)
 
-        if par.should_we_remove_mean_field and not building_mean_field:
+        if par.should_we_remove_mean_field and building_mean_field==False:
             new_data -= import_mean_field(par, mF, axis)
 
         if par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric:
@@ -195,7 +197,5 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
         elif axis == 's':
             full_data *= par.type_float(np.cos(mF*2*np.pi*par.shift_angle[num_angle]))
             full_data += par.type_float(-1*(np.sin(mF*2*np.pi*par.shift_angle[num_angle])))*import_data(par,mF,'c',paths_to_data,field_name_in_file)
-    # if par.rank == 0:
-    #     write_job_output(par.path_to_job_output,f'full_data: {full_data.dtype}')
 
     return full_data

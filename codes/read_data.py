@@ -16,12 +16,12 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
                 'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym',
-                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format',
+                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format','should_we_do_all_post_tests',
                 'should_we_modify_weights','should_mean_field_be_axisymmetric',
 'read_from_gauss']
 list_chars = ['mesh_ext','path_to_mesh','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym',
-              'bins_format','path_SFEMaNS_env','mesh_type','directory_scalar_for_weights']
+              'bins_format','mesh_type','directory_scalar_for_weights']
 
 list_several_chars = []
 list_several_list_chars = ['paths_to_data']
@@ -161,8 +161,8 @@ class parameters:
             self.nb_bits = nb_bits
             self.type_float = type_float
 #######################################################
-            path_SFEMaNS_env = read_until(lines, 'path_SFEMaNS_env')
-            self.path_SFEMaNS_env = path_SFEMaNS_env
+            #path_SFEMaNS_env = read_until(lines, 'path_SFEMaNS_env')
+            #self.path_SFEMaNS_env = path_SFEMaNS_env
 #######################################################
             test, READ_FROM_SUITE = find_string(lines, 'READ_FROM_SUITE')
             if not test:
@@ -239,7 +239,7 @@ class parameters:
 #######################################################
             test, should_mean_field_be_axisymmetric = find_string(lines, 'should_mean_field_be_axisymmetric')
             if not test:
-                should_mean_field_be_axisymmetric = True
+                should_mean_field_be_axisymmetric = False
             self.should_mean_field_be_axisymmetric = should_mean_field_be_axisymmetric
 #######################################################
             test, should_we_modify_weights = find_string(lines, 'should_we_modify_weights')
@@ -346,6 +346,11 @@ class parameters:
             if not test:
                 bins_format = 'fourier'
             self.bins_format = bins_format
+#######################################################
+            test, do_post_tests = find_string(lines, 'should_we_do_all_post_tests')
+            if not test:
+                do_post_tests = False
+            self.do_post_tests = do_post_tests
 #######################################################
             test, read_from_gauss = find_string(lines, 'read_from_gauss')
             if not test:

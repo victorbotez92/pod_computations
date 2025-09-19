@@ -1,13 +1,24 @@
-import sys
-import os
+import os,sys
 from mpi4py import MPI
 
 import numpy as np
 from einops import rearrange,einsum
 
 ########################################################################
+########################################################################
+#                   IMPORTING POD_ENV
+########################################################################
+########################################################################
 from read_data import parameters
 from basic_functions import write_job_output,indiv_ranks,invert_rank
+
+########################################################################
+########################################################################
+#                   IMPORTING SFEMaNS_ENV
+########################################################################
+########################################################################
+sys.path.append('/gpfs/users/botezv/.venv')
+from SFEMaNS_env.SFEMaNS_object import define_mesh, SFEMaNS_par
 ########################################################################
 
 list_fields = [('u', 3), ('Tub', 1), ('mu', 1), ('B', 3), ('H', 3), ('Mmu', 1), ('Dsigma', 1)]
@@ -31,19 +42,6 @@ def init(data_file, parallelize = True):
 
 
     par = parameters(data_file)
-
-
-########################################################################
-########################################################################
-#                   IMPORTING SFEMaNS_ENV
-########################################################################
-########################################################################
-
-    sys.path.append(par.path_SFEMaNS_env)
-    from read_write_SFEMaNS.read_stb import get_mesh_gauss
-    # from mesh.load_mesh import define_mesh
-    # from SFEMaNS_object.get_par import SFEMaNS_par
-    from SFEMaNS_object import define_mesh, SFEMaNS_par
 
 ########################################################################
 ########################################################################
@@ -94,7 +92,8 @@ def init(data_file, parallelize = True):
     if par.save_bins_format:
         if not par.bins_format in ['fourier', 'phys']:
             raise ValueError(f"In bins_format, you chose {par.bins_format}. Please pick fourier or phys")
-
+        if par.bins_format == 'phys':
+            raise TypeError("selected phys-like output binaries, not available yet in snapshots from SFEMaNS V6")
 ########################################################################
 ########################################################################
 # CHECKING ASSERTIONS ABOUT DATA-AUGMENTATION AND MANIPULATION
@@ -222,7 +221,7 @@ def init(data_file, parallelize = True):
 # CREATING MESHES AND RELEVANT WEIGHTS WITH MESH SYMMETRIES
 ########################################################################
 ########################################################################
-
+    mesh = None
     if not par.read_from_gauss:
         mesh = define_mesh(par.path_to_mesh, par.mesh_type)
         par.jj = mesh.jj
@@ -240,7 +239,13 @@ def init(data_file, parallelize = True):
         W = rearrange(W, 'l_G me -> (me l_G)')
         par.W = W
      
-        del mesh
+        #========== necessary for gauss_to_nodes
+    if par.save_bins_format:
+        par.l_G = mesh.l_G
+        par.me = mesh.me
+        par.rj = mesh.rj
+        par.nw = mesh.nw
+    del mesh
     
     #R, Z, W = get_mesh_gauss(sfem_par)
     #par.R = R

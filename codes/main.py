@@ -9,6 +9,7 @@ from initialization import init
 from compute_renormalizations import renormalization,build_mean_field
 from extract_latents import main_extract_latents
 from extract_modes import main_extract_modes, switch_to_bins_format
+#from post_test import post_test
 from basic_functions import write_job_output
 ########################################################################
 
@@ -129,6 +130,8 @@ if par.save_bins_format:
         par.comm.Barrier()
     if par.rank == 0:
         write_job_output(par.path_to_job_output,"=========================================================== FINISHED SWITCH TO BINS FORMAT")
+
+
 
 if par.size != 1:
     MPI.Finalize

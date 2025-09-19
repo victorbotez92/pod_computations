@@ -22,9 +22,6 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
     eigenvalues,eigenvectors = np.linalg.eigh(correlation)
     eigenvalues, eigenvectors = eigenvalues[::-1], eigenvectors[:, ::-1]
 
-    # if mF is None:
-    #     eigenvalues *= par.number_shifts
-
     Nt_float = par.type_float(len(correlation))
     Nt_int = len(correlation)
 
@@ -51,17 +48,9 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
                     eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
                     eigenvectors /= np.reshape(np.sqrt((np.abs(eigenvectors**2)).sum(0)),(1, Nt_int))   #renormalize eigenvectors
 
-
-        # if consider_crossed_correlations:
-        #     eigenvectors = eigenvectors/np.sqrt(1/2*np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
-        # else:
-        #     eigenvectors = eigenvectors/np.sqrt(np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
-        eigenvectors = eigenvectors/np.sqrt(np.sum(np.abs(eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
-        
         for m in range(par.number_shifts):
             full_eigenvectors[m*Nt_int:(m+1)*Nt_int, :] = np.exp(-2*1.j*np.pi*family/par.number_shifts*m)*eigenvectors
         if consider_crossed_correlations:
-            # full_eigenvectors = full_eigenvectors/np.sqrt(1/2*np.sum(np.abs(full_eigenvectors)**2, axis = 0).reshape(1, eigenvalues.shape[0]))
             real_part = full_eigenvectors.real
             imag_part = full_eigenvectors.imag
             eigenvectors = np.empty((full_eigenvectors.shape[0], 2*full_eigenvectors.shape[1]))
@@ -72,20 +61,18 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
             gc.collect()
         else:
             eigenvectors = full_eigenvectors.real
-            # eigenvectors = eigenvectors/np.sqrt(np.sum(eigenvectors**2, axis = 0).reshape(1, eigenvalues.shape[0]))
         del full_eigenvectors
         gc.collect()
     else:
         eigenvectors = eigenvectors.real
-        eigenvectors = eigenvectors/np.sqrt(np.sum(eigenvectors**2, axis = 0).reshape(1, eigenvalues.shape[0]))
         #the following two lines make sure a mean field component will have positive time-evolution
         new_sign = np.sign(eigenvectors[:eigenvalues.shape[0]//par.number_shifts//4,:].sum(axis=0))
         eigenvectors *= new_sign.reshape(1, new_sign.shape[0])
     if eigenvalues.min() < 0:
         print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {a}")
     
-    proj_coeffs = (np.sqrt(Nt_float*(np.abs(eigenvalues[:,np.newaxis])).T)*eigenvectors).T
-
+    eigenvectors = eigenvectors/np.sqrt(np.sum(np.abs(eigenvectors)**2, axis = 0)).reshape(1, eigenvectors.shape[1])
+    proj_coeffs = (np.sqrt(Nt_float*par.number_shifts*(np.abs(eigenvalues[:,np.newaxis])).T)*eigenvectors).T    #factor number_shifts required because Nt_float is just the raw size of snapshot matrix
     del eigenvectors
     gc.collect()
     symmetries = np.zeros(eigenvalues.shape, dtype=np.complex128)
@@ -109,6 +96,8 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
 
     return computed_pod 
 
+        
+
 def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
         
     Energies=pod_field.eigvals
@@ -122,18 +111,6 @@ def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=
             a = "sin"
             
         if par.should_we_add_mesh_symmetry:
-            # latents_not_sym = latents[:len(latents)//2,:len(latents)//2]
-            # latents_sym = latents[:len(latents)//2,len(latents)//2:]
-            # symmetry_of_latents = np.sign(np.sum(latents_not_sym*latents_sym,axis = 1)) #sum is performed over time at fixed nP
-            # if par.type_sym == "Rpi":
-            #     if a == 'c':
-            #         symmetry_of_latents *= 1
-            #     elif a == 's':
-            #         symmetry_of_latents *= -1
-            # elif par.type_sym == 'centro':
-            #     symmetry_of_latents *= (-1)**mF
-            # else:
-            #     raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
             if par.type_sym == "Rpi":
                 if a == 'c':
                     symmetries.real *= 1
@@ -145,7 +122,6 @@ def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=
                 raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
             os.makedirs(par.complete_output_path+"/"+par.output_file_name+f"/symmetry" ,exist_ok=True)
             np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetry/{a}_mF{mF:03d}.npy",symmetries)
-            # np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetry/{a}_mF{mF:03d}.npy",symmetry_of_latents)
 
         os.makedirs(par.complete_output_path+"/"+par.output_file_name+f"/latents" ,exist_ok=True)
         os.makedirs(par.complete_output_path+"/"+par.output_file_name+f"/energies" ,exist_ok=True)
@@ -155,15 +131,10 @@ def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=
     else:
 
         if par.should_we_add_mesh_symmetry:
-            # latents_not_sym = latents[:len(latents)//2,:len(latents)//2]
-            # latents_sym = latents[:len(latents)//2,len(latents)//2:]
-            # symmetry_of_latents = np.sign(np.sum(latents_not_sym*latents_sym,axis = 1)) #sum is performed over time at fixed nP
             if family is None:
                 np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys.npy",symmetries)
-                # np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys.npy",symmetry_of_latents)
             else:
                 np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys_m{family}.npy",symmetries)
-                # np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys_m{family}.npy",symmetry_of_latents)
         if family is None:
             np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time).npy",latents)
             np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys.npy',Energies)

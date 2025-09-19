@@ -59,9 +59,6 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
         factor *= 2
         weight_sym_on_right,weight_sym_on_left,weight_sym_on_right_and_left = build_symmetrized_weights(par.type_sym,rows,columns,WEIGHTS,WEIGHTS_with_symmetry,
         D = par.D,axis=axis,mF=mF)
-    # No need because already taken into account in nb_paths (Cf path_to_data containing some ".shifted" in initialization.py)
-    # if should_we_combine_with_shifted_data: 
-    #     factor *= 2
     list_blocs = [[[] for _ in range(factor*nb_paths)] for _ in range(factor*nb_paths)]
     if consider_crossed_correlations:
         list_blocs_crossed = [[[] for _ in range(factor*nb_paths)] for _ in range(factor*nb_paths)]
@@ -73,10 +70,6 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
     for i,path_to_data in enumerate(par.paths_to_data):
         first_matrix = import_data(par,mF,axis,path_to_data,field_name_in_file)
-# FIXING BUG ON MEAN-FIELD
-        # if par.should_we_remove_mean_field:
-        #     first_matrix -= par.mean_field
-# FIXING BUG ON MEAN-FIELD
         if par.rank == 0:
             write_job_output(par.path_to_job_output,f"      In POD on Fourier => {path_to_data} imported as left matrix")
 
@@ -102,10 +95,6 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
         for j in range(i+1,nb_paths):
             second_matrix = import_data(par,mF,axis,par.paths_to_data[j],field_name_in_file) #shape t a (d n)
-# FIXING BUG ON MEAN-FIELD
-            # if par.should_we_remove_mean_field:
-            #     second_matrix -= par.mean_field
-# FIXING BUG ON MEAN-FIELD
             if par.rank == 0:
                 write_job_output(par.path_to_job_output,f"          In POD on Fourier => {par.paths_to_data[j]} imported as right matrix")
 
@@ -140,10 +129,6 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
         if consider_crossed_correlations:
             for j in range(nb_paths):
                 second_matrix = import_data(par,mF,"s",par.paths_to_data[j],field_name_in_file) #shape t a (d n)
-    # FIXING BUG ON MEAN-FIELD
-                # if par.should_we_remove_mean_field:
-                #     second_matrix -= par.mean_field
-    # FIXING BUG ON MEAN-FIELD
                 if par.rank == 0:
                     write_job_output(par.path_to_job_output,f"          In crossed POD on Fourier => {par.paths_to_data[j]} imported as right matrix")
 
