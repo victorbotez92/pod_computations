@@ -70,8 +70,7 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
     for i,path_to_data in enumerate(par.paths_to_data):
         first_matrix = import_data(par,mF,axis,path_to_data,field_name_in_file)
-        if par.rank == 0:
-            write_job_output(par.path_to_job_output,f"      In POD on Fourier => {path_to_data} imported as left matrix")
+        write_job_output(par,f"      In POD on Fourier => {path_to_data} imported as left matrix")
 
 ###################### ============================================================
 ###################### Computing auto-correlation
@@ -95,8 +94,7 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
 
         for j in range(i+1,nb_paths):
             second_matrix = import_data(par,mF,axis,par.paths_to_data[j],field_name_in_file) #shape t a (d n)
-            if par.rank == 0:
-                write_job_output(par.path_to_job_output,f"          In POD on Fourier => {par.paths_to_data[j]} imported as right matrix")
+            write_job_output(par,f"          In POD on Fourier => {par.paths_to_data[j]} imported as right matrix")
 
     ############### ==============================================================
     ############### Computing crossed-correlations (between different paths)
@@ -129,8 +127,7 @@ def core_correlation_matrix_by_blocks(par,mF,axis,field_name_in_file,for_buildin
         if consider_crossed_correlations:
             for j in range(nb_paths):
                 second_matrix = import_data(par,mF,"s",par.paths_to_data[j],field_name_in_file) #shape t a (d n)
-                if par.rank == 0:
-                    write_job_output(par.path_to_job_output,f"          In crossed POD on Fourier => {par.paths_to_data[j]} imported as right matrix")
+                write_job_output(par,f"          In crossed POD on Fourier => {par.paths_to_data[j]} imported as right matrix")
 
         ############### ==============================================================
         ############### Computing crossed-correlations (between cos and sine)

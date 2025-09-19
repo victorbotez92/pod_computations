@@ -72,8 +72,7 @@ def main_extract_modes(data_par):
                 a_phys = dummy_a
                 e_phys = e_phys[::2]
 
-        if data_par.rank == 0:
-            write_job_output(data_par.path_to_job_output,f'entering Fourier loop {num_mF//data_par.nb_proc_in_fourier+1}/{len(data_par.list_modes[data_par.rank_fourier::data_par.nb_proc_in_fourier])//data_par.nb_proc_in_fourier}')
+        write_job_output(data_par,f'entering Fourier loop {num_mF//data_par.nb_proc_in_fourier+1}/{len(data_par.list_modes[data_par.rank_fourier::data_par.nb_proc_in_fourier])//data_par.nb_proc_in_fourier}')
         list_axis = ["c","s"]
         for a in range(data_par.rank_axis,2,data_par.nb_proc_in_axis):
             axis = list_axis[a]
@@ -102,12 +101,10 @@ def main_extract_modes(data_par):
 
                 sym_data = None
                 
-                if data_par.rank == 0:
-                    write_job_output(data_par.path_to_job_output,f'  Importing all of {path_to_data}')
+                write_job_output(data_par,f'  Importing all of {path_to_data}')
                 for individual_path_to_data in path_to_data:
                     new_data = import_data(data_par,mF,axis,[individual_path_to_data],data_par.field_name_in_file) #shape t (d n)
-                    if data_par.rank == 0:
-                        write_job_output(data_par.path_to_job_output,f'      Successfully imported {individual_path_to_data}')
+                    write_job_output(data_par,f'      Successfully imported {individual_path_to_data}')
                     T_new_data = new_data.shape[0]
                     N_space = new_data.shape[-1]
                     if (local_nb_snapshots is None) and (previous_nb_snapshots is None):

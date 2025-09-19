@@ -9,7 +9,6 @@ import gc
 from einops import rearrange
 import numpy as np
 from scipy.sparse import csr_matrix
-# from basic_functions import write_job_output
 
 class POD:
     def __init__(self,eigvals,proj_coeffs,symmetries):

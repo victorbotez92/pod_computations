@@ -1,8 +1,10 @@
-def write_job_output(path,message):
-    with open(path, 'r') as f:
-        content = f.read()
-    with open(path, 'w') as f:
-        f.write(content+'\n'+message)
+def write_job_output(par,message,list_ranks = [0]):
+    path = par.path_to_job_output
+    if par.rank in list_ranks:
+        with open(path, 'r') as f:
+            content = f.read()
+        with open(path, 'w') as f:
+            f.write(content+'\n'+message)
 
 def indiv_ranks(par):
     rank_axis = par.rank//(par.nb_proc_in_fourier*par.nb_proc_in_meridian)

@@ -43,12 +43,10 @@ def main_extract_latents(par):
                 else:
                     index_correlation += 1
 
-        if par.rank == 0:
-            write_job_output(par.path_to_job_output,f'entering Fourier loop {i//par.nb_proc_in_fourier+1}/{len(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier])//par.nb_proc_in_fourier}')
+        write_job_output(par,f'entering Fourier loop {i//par.nb_proc_in_fourier+1}/{len(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier])//par.nb_proc_in_fourier}')
         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
             axis = list_axis[a]
-            if par.rank == 0:
-                write_job_output(par.path_to_job_output,f'doing axis {axis}')
+            write_job_output(par,f'doing axis {axis}')
 
     ############### ==============================================================
     ############### Create correlation matrix
@@ -84,8 +82,7 @@ def main_extract_latents(par):
                 correlation = par.comm_meridian.reduce(correlation,root=0)
                 if consider_crossed_correlations:
                     crossed_correlations = par.comm_meridian.reduce(crossed_correlations,root=0)
-                if par.rank == 0:
-                    write_job_output(par.path_to_job_output,'Successfully reduced all in Meridian')
+                write_job_output(par,'Successfully reduced all in Meridian')
     ############### ==============================================================
     ############### Compute POD of Fourier components
     ############### ==============================================================
@@ -130,15 +127,13 @@ def main_extract_latents(par):
         if par.size > 1:
             # cumulated_correlation = par.comm_axis.reduce(cumulated_correlation,root=0)
             list_correlations = par.comm_axis.reduce(list_correlations,root=0)
-            if par.rank == 0:
-                write_job_output(par.path_to_job_output,'Successfully reduced all in axis')
+            write_job_output(par,'Successfully reduced all in axis')
         if par.rank_axis == 0:
                 ############### MPI_ALL_REDUCE in Fourier
             if par.size > 1:
                 # cumulated_correlation = par.comm_fourier.reduce(cumulated_correlation,root=0)
                 list_correlations = par.comm_fourier.reduce(list_correlations,root=0)
-                if par.rank == 0:
-                    write_job_output(par.path_to_job_output,'Successfully reduced all in Fourier')
+                write_job_output(par,'Successfully reduced all in Fourier')
             
             list_pod_a = []
             for i,m_family in enumerate(par.list_m_families):
@@ -162,7 +157,7 @@ def main_extract_latents(par):
                         pod_a = compute_POD_features(par,list_correlations[i],family=m,consider_crossed_correlations=consider_crossed_correlations)
                     list_pod_a.append(pod_a)
                     save_pod(par,pod_a,family=m)
-                    write_job_output(par.path_to_job_output,f'succesfully saved spectra for symetrized suites (phys POD) of family {m}')
+                    write_job_output(par,f'succesfully saved spectra for symetrized suites (phys POD) of family {m}')
 
     ######################################## OPTIONAL SAVINGS
                     if par.should_we_save_phys_correlation:
@@ -176,4 +171,4 @@ def main_extract_latents(par):
                 all_symmetries = np.concatenate([pod.symmetries for pod in list_pod_a])[sorting_indexes]
                 full_pod = POD(all_eigvals,all_eigvecs,all_symmetries)
                 save_pod(par,full_pod)
-                write_job_output(par.path_to_job_output,f'succesfully saved full spectra for symetrized suites (phys POD)')
+                write_job_output(par,f'succesfully saved full spectra for symetrized suites (phys POD)')

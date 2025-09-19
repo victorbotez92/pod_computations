@@ -35,8 +35,7 @@ def build_L2_renormalization(par, mesh_type):
                     once_create_array = False
                     for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
                     # for mF in range(par.rank_fourier,par.MF,par.nb_proc_in_fourier): # beginning calculations
-                        if par.rank == 0:
-                            write_job_output(par.path_to_job_output,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
+                        write_job_output(par,f'entering Fourier loop {mF//par.nb_proc_in_fourier+1}/{par.MF//par.nb_proc_in_fourier}')
                         normalize_fourier = (mF == 0) + 1/2*(1-(mF == 0)) # 1/2 if mF > 0, 1 if mF = 0
                         list_axis = ["c","s"]
                         for a in range(par.rank_axis,2,par.nb_proc_in_axis):
@@ -45,8 +44,7 @@ def build_L2_renormalization(par, mesh_type):
                         ### importing data
                         ### ==============================================================
                             new_data = import_data(par,mF,axis,[path_to_data],par.field_name_in_file,should_we_renormalize=False) # shape t a (d n)
-                            if par.rank == 0:
-                                write_job_output(par.path_to_job_output,f'Successfully imported {[path_to_data]}')
+                            write_job_output(par,f'Successfully imported {[path_to_data]}')
                             renormalize_factor = new_data**2*normalize_fourier
                             renormalize_factor = np.sum(WEIGHTS*renormalize_factor,axis=(1,2))
 
@@ -67,8 +65,7 @@ def build_L2_renormalization(par, mesh_type):
                         for nb_axis in range(1,par.nb_proc_in_axis):
                             rank_recv = invert_rank(par.rank_fourier,nb_axis,0,par)
                             new_renormalize_factor += par.comm.recv(source=rank_recv)
-                        if par.rank == 0:
-                            write_job_output(par.path_to_job_output,'Successfully reduced all in axis')
+                        write_job_output(par,'Successfully reduced all in axis')
 
                             ### ==============================================================
                             ### MPI_ALL_REDUCE in Fourier
@@ -80,8 +77,7 @@ def build_L2_renormalization(par, mesh_type):
                             for nb_fourier in range(1,par.nb_proc_in_fourier):
                                 rank_recv = invert_rank(nb_fourier,0,0,par)
                                 new_renormalize_factor += par.comm.recv(source=rank_recv)
-                            if par.rank == 0:
-                                write_job_output(par.path_to_job_output,'Successfully reduced all in Fourier')
+                            write_job_output(par,'Successfully reduced all in Fourier')
                             np.save(par.path_to_suites+path_to_data+'L2_norm.npy',np.sqrt(new_renormalize_factor)) # has shape (time)
 
 
@@ -102,11 +98,9 @@ def build_mean_field(par, mesh_type, paths_to_data):
                 ### ==============================================================
                 os.makedirs(MF_output,exist_ok=True)
                 if os.path.exists(f'{MF_output}/mF{mF}_{axis}.npy'): # the calculations are not made if it was already done before
-                    if par.rank == 0:
-                        write_job_output(par.path_to_job_output,f'mean field already computed for mF = {mF}, axis {axis} for {char}')
+                    write_job_output(par,f'mean field already computed for mF = {mF}, axis {axis} for {char}')
                 else:
-                    if par.rank == 0:
-                        write_job_output(par.path_to_job_output,f'computing mean field for mF = {mF}, axis {axis} for {char}')
+                    write_job_output(par,f'computing mean field for mF = {mF}, axis {axis} for {char}')
                     once_make_mean_field = False
                     for several_paths_to_data in paths_to_data:
                     ### ==============================================================
@@ -118,8 +112,7 @@ def build_mean_field(par, mesh_type, paths_to_data):
                         #         bool_shifted = True
                         # if not bool_shifted:
                         new_data = import_data(par,mF,axis,several_paths_to_data,par.field_name_in_file,should_we_renormalize=False,building_mean_field=True) # shape t (d n)
-                        if par.rank == 0:
-                            write_job_output(par.path_to_job_output,f'      Successfully imported {several_paths_to_data}')
+                        write_job_output(par,f'      Successfully imported {several_paths_to_data}')
                         if once_make_mean_field == False:
                             once_make_mean_field = True
                             mean_data = np.sum(new_data, axis = 0)
