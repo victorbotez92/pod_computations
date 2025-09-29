@@ -80,28 +80,15 @@ def apply_renormalization(par,data,path_to_data):
 ################################# IMPORTING MEAN FIELD
 
 def import_mean_field(par, mF, axis):
-    bool_import_mean_field = False
-    if par.should_mean_field_be_axisymmetric and mF==0:
-        bool_import_mean_field = True
-    elif par.should_mean_field_be_axisymmetric == False:
-        if par.number_shifts>1 and par.should_mean_field_computation_include_mesh_sym and (mF in par.list_m_families[0]):
-            bool_import_mean_field = True
-        elif par.number_shifts == 1:
-            bool_import_mean_field = True
-
-    if bool_import_mean_field == True:
-        if par.should_mean_field_computation_include_mesh_sym:
-            char = 'mesh_sym'
-        else:
-            char = 'no_mesh_sym'                    
-        return np.load(par.complete_output_path+f'/mean_field_{char}/mF{mF}_{axis}.npy')
+    bool_import_mean_field = (mF == 0 and axis=='c') or ((mF != 0) and (mF in par.list_m_families[0]) and (par.should_mean_field_be_axisymmetric == False))
+    if bool_import_mean_field:
+        return np.load(par.complete_output_path+f'/mean_field/mF{mF}_{axis}.npy')
     else:
         return 0
 
 ################################# MAIN FUNCTION
 
-def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renormalize=True,building_mean_field=False): # the last parameter is set to False only when creating the normalization coefficients
-    #size_mesh = [len(np.fromfile(par.path_to_mesh+f"/{par.mesh_type}rr_S{s:04d}"+par.mesh_ext)) for s in range(par.S)]
+def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renormalize=True,rm_mean_field=True):
     ####################################################### IMPORTING SUCCESSIVELY ALL PATHS TO DEAL WITH AS ONE
     paths_to_data = []
     for num,raw_path_to_data in enumerate(raw_paths_to_data):
@@ -146,10 +133,15 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
             snapshots_per_suite = int(tab_snapshots_per_suites[0])
             new_data = get_data(par.path_to_suites+path_to_data,
             field_name_in_file,par.mesh_ext,mF,par.D,par.S,snapshots_per_suite,N,axis,type_float = par.type_float)
-            if not par.read_from_gauss:
-                new_data = rearrange(new_data, 'T d n -> n d T')
-                new_data = nodes_to_gauss(new_data, par)
-                new_data = rearrange(new_data, 'n d T -> T d n')
+#            if not par.read_from_gauss:
+#                new_data = rearrange(new_data, 't d n -> n d t')
+#                new_data = nodes_to_gauss(new_data, par)
+#                new_data = rearrange(new_data, 'n d t -> t d n')
+
+            if par.read_from_gauss:
+                new_data = rearrange(new_data, 't d n -> n d t')
+                new_data = gauss_to_nodes(new_data, par, par.W)
+                new_data = rearrange(new_data, 'n d t -> t d n')
 
             new_data = rearrange(new_data,"t d n -> t (d n) ")
 
@@ -158,7 +150,8 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
         if should_we_renormalize and par.is_the_field_to_be_renormalized_by_its_L2_norm:
             new_data = apply_renormalization(par,new_data,path_to_data)
 
-        if par.should_we_remove_mean_field and building_mean_field==False:
+        if par.should_we_remove_mean_field and rm_mean_field==True:
+        #if par.should_we_remove_mean_field and building_mean_field==False:
             new_data -= import_mean_field(par, mF, axis)
 
         if par.should_we_restrain_to_symmetric or par.should_we_restrain_to_antisymmetric:
@@ -193,9 +186,9 @@ def import_data(par,mF,axis,raw_paths_to_data,field_name_in_file,should_we_renor
     if to_be_shifted and mF != 0: # '.shifted' removed from 'path_to_data' so won't enter this loop in the 'import_data' from below
         if axis == 'c':
             full_data *= par.type_float(np.cos(mF*2*np.pi*par.shift_angle[num_angle]))
-            full_data += par.type_float(np.sin(mF*2*np.pi*par.shift_angle[num_angle]))*import_data(par,mF,'s',paths_to_data,field_name_in_file) 
+            full_data += par.type_float(np.sin(mF*2*np.pi*par.shift_angle[num_angle]))*import_data(par,mF,'s',paths_to_data,field_name_in_file, rm_mean_field=rm_mean_field) 
         elif axis == 's':
             full_data *= par.type_float(np.cos(mF*2*np.pi*par.shift_angle[num_angle]))
-            full_data += par.type_float(-1*(np.sin(mF*2*np.pi*par.shift_angle[num_angle])))*import_data(par,mF,'c',paths_to_data,field_name_in_file)
+            full_data += par.type_float(-1*(np.sin(mF*2*np.pi*par.shift_angle[num_angle])))*import_data(par,mF,'c',paths_to_data,field_name_in_file, rm_mean_field = rm_mean_field)
 
     return full_data

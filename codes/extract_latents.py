@@ -14,7 +14,7 @@ import numpy as np
 # from scipy.sparse import csr_matrix
 
 ###############################
-from POD_computation import compute_POD_features, save_pod, POD
+from POD_computation import compute_POD_features, save_pod, POD, update_pod_with_mean_field
 from compute_correlations import core_correlation_matrix_by_blocks
 from basic_functions import write_job_output
 ###############################
@@ -109,6 +109,8 @@ def main_extract_latents(par):
             if par.should_we_save_Fourier_POD and par.rank_meridian == 0:
         
                 pod_a = compute_POD_features(par,correlation,mF=mF,a=axis)
+                if par.should_we_remove_mean_field:
+                    pod_a = update_pod_with_mean_field(par,pod_a,is_it_phys_pod=False,mF=mF,fourier_type=axis)
                 save_pod(par,pod_a,is_it_phys_pod=False,mF=mF,fourier_type=axis)
                 del pod_a
                 del correlation
@@ -156,6 +158,8 @@ def main_extract_latents(par):
                     else:
                         pod_a = compute_POD_features(par,list_correlations[i],family=m,consider_crossed_correlations=consider_crossed_correlations)
                     list_pod_a.append(pod_a)
+                    if par.should_we_remove_mean_field:
+                        pod_a = update_pod_with_mean_field(par,pod_a,family=m)
                     save_pod(par,pod_a,family=m)
                     write_job_output(par,f'succesfully saved spectra for symetrized suites (phys POD) of family {m}')
 

@@ -12,6 +12,11 @@ from basic_functions import write_job_output,invert_rank
 ###############################
 
 
+###############################
+import sys
+sys.path.append("/gpfs/users/.venv/")
+from SFEMaNS_env.operators import gauss_to_nodes, nodes_to_gauss
+###############################
 
 
 ########################################################################
@@ -43,7 +48,7 @@ def build_L2_renormalization(par, mesh_type):
                         ### ==============================================================
                         ### importing data
                         ### ==============================================================
-                            new_data = import_data(par,mF,axis,[path_to_data],par.field_name_in_file,should_we_renormalize=False) # shape t a (d n)
+                            new_data = import_data(par,mF,axis,[path_to_data],par.field_name_in_file,should_we_renormalize=False, rm_mean_field=False) # shape t a (d n)
                             write_job_output(par,f'Successfully imported {[path_to_data]}')
                             renormalize_factor = new_data**2*normalize_fourier
                             renormalize_factor = np.sum(WEIGHTS*renormalize_factor,axis=(1,2))
@@ -83,24 +88,24 @@ def build_L2_renormalization(par, mesh_type):
 
 def build_mean_field(par, mesh_type, paths_to_data):
     for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
-        if not(mF != 0 and par.should_mean_field_be_axisymmetric):
-            
-            list_axis = ["c","s"]
+        #if not(mF != 0 and par.should_mean_field_be_axisymmetric):
+        bool_compute_mean_field = (mF == 0) or ((mF != 0) and (mF in par.list_m_families[0]) and (par.should_mean_field_be_axisymmetric == False))
+        if bool_compute_mean_field:
+            if mF == 0: 
+                list_axis = ["c"]
+            else:
+                list_axis = ["c","s"]
             for a in range(par.rank_axis,len(list_axis),par.nb_proc_in_axis):
                 axis = list_axis[a]
-                if par.should_mean_field_computation_include_mesh_sym:
-                    char = 'mesh_sym'
-                else:
-                    char = 'no_mesh_sym'
-                MF_output = par.complete_output_path + f'/mean_field_{char}/'
+                MF_output = par.complete_output_path + par.output_file_name + f'/mean_field/'
                 ### ==============================================================
                 ### Checking mean field calculation has not already been done
                 ### ==============================================================
                 os.makedirs(MF_output,exist_ok=True)
                 if os.path.exists(f'{MF_output}/mF{mF}_{axis}.npy'): # the calculations are not made if it was already done before
-                    write_job_output(par,f'mean field already computed for mF = {mF}, axis {axis} for {char}')
+                    write_job_output(par,f'mean field already computed for mF = {mF}, axis {axis}')
                 else:
-                    write_job_output(par,f'computing mean field for mF = {mF}, axis {axis} for {char}')
+                    write_job_output(par,f'computing mean field for mF = {mF}, axis {axis}')
                     once_make_mean_field = False
                     for several_paths_to_data in paths_to_data:
                     ### ==============================================================
@@ -111,7 +116,7 @@ def build_mean_field(par, mesh_type, paths_to_data):
                         #     if 'shifted' in path:
                         #         bool_shifted = True
                         # if not bool_shifted:
-                        new_data = import_data(par,mF,axis,several_paths_to_data,par.field_name_in_file,should_we_renormalize=False,building_mean_field=True) # shape t (d n)
+                        new_data = import_data(par,mF,axis,several_paths_to_data,par.field_name_in_file,should_we_renormalize=False,rm_mean_field=False) # shape t (d n)
                         write_job_output(par,f'      Successfully imported {several_paths_to_data}')
                         if once_make_mean_field == False:
                             once_make_mean_field = True
@@ -125,9 +130,12 @@ def build_mean_field(par, mesh_type, paths_to_data):
                     ### ==============================================================
                     ### applying symmetry when required
                     ### ==============================================================
-                    if par.should_mean_field_computation_include_mesh_sym:
+
+                    if par.should_we_add_mesh_symmetry:
+                        mean_data = rearrange(mean_data, "(d n) -> n d 1", d=par.D) 
+                        mean_data = nodes_to_gauss(mean_data, par)[:, :, 0].T
                         sym_data = mean_data.copy()
-                        sym_data = rearrange(sym_data,"(d n) -> d n",d=par.D)
+                   #     sym_data = rearrange(sym_data,"(d n) -> d n",d=par.D)
                         if par.type_sym == 'Rpi':
                             for d in range(par.D):
                                 d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
@@ -139,12 +147,21 @@ def build_mean_field(par, mesh_type, paths_to_data):
                                 d_coeff = (1/2-(d == 2))*2 # this coeff has value +1 when d = 0,1 (so for compo r & theta) and -1 when d = 2 (so for compo z)
                                 sym_data[d,:] = d_coeff*sym_data[d,par.tab_pairs]
                             sym_data *= (-1)**mF# factor -1 when performing centro-sym on even Fourier modes
-                        sym_data = rearrange(sym_data,"d n  -> (d n)")
+                        #sym_data = rearrange(sym_data,"d n  -> (d n)")
                         mean_data = (mean_data + sym_data)/2
+                        del sym_data
+
+                        mean_data = rearrange(mean_data, "d n -> n d 1", d=par.D)
+                        mean_data = gauss_to_nodes(mean_data, par, par.W)[:, :, 0]
+                        mean_data = rearrange(mean_data, "n d -> (d n)")
+
                     ### ==============================================================
                     ### saving calculated mean field
                     ### ==============================================================
                     np.save(f'{MF_output}/mF{mF}_{axis}.npy',mean_data) # has shape (d n)
+                    if mF == 0 and axis == 'c':
+                        _, _, WEIGHTS, _ = par.for_building_symmetrized_weights
+                        #print("computed mean-field = ", np.sum(nodes_to_gauss(mean_data**2, par)*WEIGHTS))
                 # end if os.path.exist
             # end for a in list_axis
     # end for mF in MF

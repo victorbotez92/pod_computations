@@ -103,7 +103,7 @@ def main_extract_modes(data_par):
                 
                 write_job_output(data_par,f'  Importing all of {path_to_data}')
                 for individual_path_to_data in path_to_data:
-                    new_data = import_data(data_par,mF,axis,[individual_path_to_data],data_par.field_name_in_file) #shape t (d n)
+                    new_data = import_data(data_par,mF,axis,[individual_path_to_data],data_par.field_name_in_file, rm_mean_field=False) #shape t (d n)
                     write_job_output(data_par,f'      Successfully imported {individual_path_to_data}')
                     T_new_data = new_data.shape[0]
                     N_space = new_data.shape[-1]
@@ -139,7 +139,7 @@ def main_extract_modes(data_par):
                         if phys_pod_modes is None:
                             phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
                         if consider_crossed_correlations:
-                            complex_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file)
+                            complex_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file, rm_mean_field=False)
                             new_data = complex_data
                             del complex_data
                             gc.collect()

@@ -10,6 +10,8 @@ from einops import rearrange
 import numpy as np
 from scipy.sparse import csr_matrix
 
+from functions_to_get_data import import_mean_field
+
 class POD:
     def __init__(self,eigvals,proj_coeffs,symmetries):
         self.eigvals = eigvals
@@ -96,6 +98,89 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
     return computed_pod 
 
         
+def update_pod_with_mean_field(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
+        
+    Energies=pod_field.eigvals
+    latents=pod_field.proj_coeffs
+    symmetries = pod_field.symmetries
+
+    if is_it_phys_pod == False:
+        if fourier_type == "c":
+            a = "cos"
+        elif fourier_type == "s":
+            a = "sin"
+            
+#============= INCORPORATING MEAN FIELD TO DATA
+        if par.should_we_remove_mean_field:
+            bool_import_mean_field = (mF == 0 and fourier_type=='c') or ((mF != 0) and (mF%par.number_shifts==0) and (par.should_mean_field_be_axisymmetric == False))
+            if bool_import_mean_field:
+                mean_field = import_mean_field(par, mF, fourier_type)
+                _, _, WEIGHTS, _ = par.for_building_symmetrized_weights
+    
+                mean_energy = np.sum(mean_field**2*WEIGHTS)
+                Energies = np.concatenate((np.array([mean_energy]), Energies))          
+    
+                cst_latent = np.sqrt(mean_energy)*np.ones(latents.shape[1])
+                cst_latent = cst_latent.reshape(1, cst_latent.shape[0])
+                latents = np.vstack((cst_latent, latents))
+    
+                if par.should_we_add_mesh_symmetry:
+                    if par.type_sym == "Rpi":
+                        if fourier_type == 'c':
+                            sym_mean_field = 1+mF*1.j
+                        elif fourier_type == 's':
+                            sym_mean_field = -1-mF*1.j
+                    elif par.type_sym == 'centro':
+                        sym_mean_field = (-1)**mF*(1+mF*1.j)
+                    else:
+                        raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
+                    symmetries = np.concatenate((np.array([sym_mean_field]), symmetries)) 
+#============= INCORPORATING MEAN FIELD TO DATA
+
+    else:
+
+#============= INCORPORATING MEAN FIELD TO DATA
+        if par.should_we_remove_mean_field:
+            bool_import_mean_field = (not family is None) and (family == 0)
+            if bool_import_mean_field:
+                mean_energy = 0
+                for mF in (par.list_m_families[0]):
+                    for axis in ['c','s']:
+                        if (mF==0 and axis=='s') or (mF!=0 and par.should_mean_field_be_axisymmetric==False):
+                            continue
+                        mean_field = import_mean_field(par, mF, axis)
+                        _, _, WEIGHTS, _ = par.for_building_symmetrized_weights
+                        fourier_factor = 1/2*(mF > 0) + 1*(mF == 0)
+
+                        mean_energy += fourier_factor*np.sum(mean_field**2*WEIGHTS)
+
+                #Energies = np.concatenate((np.array([mean_energy]), Energies))          
+
+                #cst_latent = np.sqrt(mean_energy)/(par.number_shifts/latents.shape[1])*np.ones(latents.shape[1])
+                #cst_latent = cst_latent.reshape(1, cst_latent.shape[0])
+
+                cst_latent = np.sqrt(mean_energy)*np.ones(latents.shape[1])
+                cst_latent = cst_latent.reshape(1, cst_latent.shape[0])
+                latents = np.vstack((cst_latent, latents))
+                Energies = np.concatenate((np.array([mean_energy]), Energies))          
+              
+                if par.should_we_add_mesh_symmetry:
+                    symmetries = np.concatenate((np.array([1+0.j]), symmetries))
+#                print("cst latent is = ", cst_latent.mean(), cst_latent.std())
+#                print("mean_energy is =", mean_energy)
+#                print(1/0) 
+#============= INCORPORATING MEAN FIELD TO DATA
+    pod_field.eigvals=Energies
+    pod_field.proj_coeffs=latents
+    pod_field.symmetries=symmetries
+    
+    if Energies.min() == 0:
+        raise ValueError(f"Energy Error in update_pod_with_mean_field: {pod_field},from_phys={is_it_phys_pod},family={family},mF={mF},fourier_type={fourier_type})")
+    if np.abs(latents[0]).min() == 0:
+        raise ValueError(f"new latent Error in update_pod_with_mean_field: {pod_field},from_phys={is_it_phys_pod},family={family},mF={mF},fourier_type={fourier_type})")
+    #if np.abs(latents).min() == 0:
+     #   raise ValueError(f"latent Error in update_pod_with_mean_field: {pod_field},from_phys={is_it_phys_pod},family={family},mF={mF},fourier_type={fourier_type})")
+    return pod_field
 
 def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
         
@@ -103,7 +188,7 @@ def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=
     latents=pod_field.proj_coeffs
     symmetries = pod_field.symmetries
 
-    if not is_it_phys_pod:
+    if is_it_phys_pod == False:
         if fourier_type == "c":
             a = "cos"
         elif fourier_type == "s":

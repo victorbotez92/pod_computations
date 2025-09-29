@@ -82,6 +82,13 @@ False
 ===directory_scalar_for_weights=== #python module "weight_pod.py", function imported is axisym_scalar and takes two numpy arguments: R, Z
 /gpfs/users/botezv/APPLICATIONS_POD/pod_computations/scalar_for_weights/
 
+===should_we_penalize_divergence===
+False
+
+===penal_div===
+1.0e0
+
+
 ###################### data enhancement methods (can choose multiple ones)
 #################################################
 #################################################
@@ -124,8 +131,8 @@ True
 ===should_we_remove_mean_field=== #this will compute the avg field of each Fourier component and then remove it from the field 
 False
 
-===should_mean_field_computation_include_mesh_sym=== #only relevant when setting mesh symmetry to True and should_we_remove_mean_field to True
-True
+#===should_mean_field_computation_include_mesh_sym=== #only relevant when setting mesh symmetry to True and should_we_remove_mean_field to True
+#True      DISABLED
 
 ===should_mean_field_be_axisymmetric===
 True

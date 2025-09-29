@@ -8,16 +8,16 @@ import numpy as np
 
 list_ints = ['D','S','MF','nb_proc_in_fourier','nb_proc_in_axis','nb_proc_in_meridian','nb_bits','number_shifts']
 list_several_ints = ['fourier_pod_modes_to_save','phys_pod_modes_to_save','opt_mF']
-list_floats = []
+list_floats = ['penal_div']
 list_several_floats = ['shift_angle']
 list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_energy',
                 'is_the_field_to_be_renormalized_by_its_L2_norm','should_we_save_Fourier_POD','should_we_save_phys_POD',
                 'should_we_save_phys_correlation','should_we_extract_latents','should_we_extract_modes',
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
-                'should_we_remove_mean_field','should_mean_field_computation_include_mesh_sym',
+                'should_we_remove_mean_field',#'should_mean_field_computation_include_mesh_sym',
                 'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format','should_we_do_all_post_tests',
-                'should_we_modify_weights','should_mean_field_be_axisymmetric',
+                'should_we_modify_weights','should_we_penalize_divergence','should_mean_field_be_axisymmetric',
 'read_from_gauss']
 list_chars = ['mesh_ext','path_to_mesh','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym',
@@ -232,10 +232,10 @@ class parameters:
                 should_we_remove_mean_field = False
             self.should_we_remove_mean_field = should_we_remove_mean_field
 #######################################################
-            test, should_mean_field_computation_include_mesh_sym = find_string(lines, 'should_mean_field_computation_include_mesh_sym')
-            if not test:
-                should_mean_field_computation_include_mesh_sym = True
-            self.should_mean_field_computation_include_mesh_sym = should_mean_field_computation_include_mesh_sym
+#            test, should_mean_field_computation_include_mesh_sym = find_string(lines, 'should_mean_field_computation_include_mesh_sym')
+#            if not test:
+#                should_mean_field_computation_include_mesh_sym = True
+#            self.should_mean_field_computation_include_mesh_sym = should_mean_field_computation_include_mesh_sym
 #######################################################
             test, should_mean_field_be_axisymmetric = find_string(lines, 'should_mean_field_be_axisymmetric')
             if not test:
@@ -246,6 +246,19 @@ class parameters:
             if not test:
                 should_we_modify_weights = False
             self.should_we_modify_weights = should_we_modify_weights
+#######################################################
+            test, should_we_penalize_divergence = find_string(lines, 'should_we_penalize_divergence')
+            if test and self.D != 3:
+                raise ValueError(f"Cannot penalize divergence if entry dimension is {self.D}")
+            if not test:
+                should_we_penalize_divergence = False
+            self.should_we_penalize_divergence = should_we_penalize_divergence
+#######################################################
+            if self.should_we_penalize_divergence:
+                test, penal_div = find_string(lines, 'penal_div')
+                if not test:
+                    penal_div = 1.0
+                self.penal_div = penal_div
 #######################################################
             test, directory_scalar_for_weights = find_string(lines, 'directory_scalar_for_weights')
             if not test:
