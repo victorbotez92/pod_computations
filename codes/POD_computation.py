@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import os
-import gc
-
+import gc, os, sys
+sys.path.append("/gpfs/users/botezv/.venv/")
+from SFEMaNS_env.operators import nodes_to_gauss
 # from memory_profiler import profile
 
 #sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
@@ -115,6 +115,9 @@ def update_pod_with_mean_field(par,pod_field,is_it_phys_pod=True,family=None,mF=
             bool_import_mean_field = (mF == 0 and fourier_type=='c') or ((mF != 0) and (mF%par.number_shifts==0) and (par.should_mean_field_be_axisymmetric == False))
             if bool_import_mean_field:
                 mean_field = import_mean_field(par, mF, fourier_type)
+                mean_field = rearrange(mean_field, "(d n) -> n d 1", d = par.D)
+                mean_field = nodes_to_gauss(mean_field, par)[:, :, 0]
+                mean_field = rearrange(mean_field, "n d -> (d n)")
                 _, _, WEIGHTS, _ = par.for_building_symmetrized_weights
     
                 mean_energy = np.sum(mean_field**2*WEIGHTS)
@@ -123,7 +126,9 @@ def update_pod_with_mean_field(par,pod_field,is_it_phys_pod=True,family=None,mF=
                 cst_latent = np.sqrt(mean_energy)*np.ones(latents.shape[1])
                 cst_latent = cst_latent.reshape(1, cst_latent.shape[0])
                 latents = np.vstack((cst_latent, latents))
-    
+   
+
+                symmetries = np.concatenate((np.array([0], dtype=np.complex128), symmetries)) 
                 if par.should_we_add_mesh_symmetry:
                     if par.type_sym == "Rpi":
                         if fourier_type == 'c':
@@ -134,7 +139,8 @@ def update_pod_with_mean_field(par,pod_field,is_it_phys_pod=True,family=None,mF=
                         sym_mean_field = (-1)**mF*(1+mF*1.j)
                     else:
                         raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
-                    symmetries = np.concatenate((np.array([sym_mean_field]), symmetries)) 
+                    symmetries[0] = sym_mean_field 
+                    #symmetries = np.concatenate((np.array([sym_mean_field]), symmetries)) 
 #============= INCORPORATING MEAN FIELD TO DATA
 
     else:
@@ -149,6 +155,9 @@ def update_pod_with_mean_field(par,pod_field,is_it_phys_pod=True,family=None,mF=
                         if (mF==0 and axis=='s') or (mF!=0 and par.should_mean_field_be_axisymmetric==False):
                             continue
                         mean_field = import_mean_field(par, mF, axis)
+                        mean_field = rearrange(mean_field, "(d n) -> n d 1", d = par.D)
+                        mean_field = nodes_to_gauss(mean_field, par)[:, :, 0]
+                        mean_field = rearrange(mean_field, "n d -> (d n)")
                         _, _, WEIGHTS, _ = par.for_building_symmetrized_weights
                         fourier_factor = 1/2*(mF > 0) + 1*(mF == 0)
 
@@ -163,7 +172,8 @@ def update_pod_with_mean_field(par,pod_field,is_it_phys_pod=True,family=None,mF=
                 cst_latent = cst_latent.reshape(1, cst_latent.shape[0])
                 latents = np.vstack((cst_latent, latents))
                 Energies = np.concatenate((np.array([mean_energy]), Energies))          
-              
+                
+                symmetries = np.concatenate((np.array([0], dtype=np.complex128), symmetries))
                 if par.should_we_add_mesh_symmetry:
                     symmetries = np.concatenate((np.array([1+0.j]), symmetries))
 #                print("cst latent is = ", cst_latent.mean(), cst_latent.std())

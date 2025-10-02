@@ -59,28 +59,45 @@ def main_extract_latents(par):
                     consider_crossed_correlations = True
                     if (m-mF)%par.number_shifts == 0:
                         epsilon_correlations = 1
-                    else:
+                    elif (m+mF)%par.number_shifts == 0:
                         epsilon_correlations = -1
+                    else:
+                        raise ValueError(f"Inconsistency in crossed correlations: code found mF={mF} in {m}-family")
 
             else:
                 consider_crossed_correlations = False
 
-            correlation, crossed_correlations = core_correlation_matrix_by_blocks(par,mF,axis,par.field_name_in_file,
+            
+            #correlation, crossed_correlations = core_correlation_matrix_by_blocks(par,mF,axis,par.field_name_in_file,
+            all_blocks = core_correlation_matrix_by_blocks(par,mF,axis,par.field_name_in_file,
                                                         for_building_symmetrized_weights=par.for_building_symmetrized_weights,
                                                         consider_crossed_correlations=consider_crossed_correlations)
-            correlation = np.block(correlation)
+            correlation = np.block(all_blocks.list_blocs)
             Nt = len(correlation)
             correlation *= par.type_float(1/Nt)
             if consider_crossed_correlations:
-                crossed_correlations = np.block(crossed_correlations)
+                crossed_correlations = np.block(all_blocks.list_blocs_crossed)
+                if par.should_we_penalize_divergence:
+                    crossed_correlations += np.block(all_blocks.list_blocs_crossed_dvg)
+                all_blocks.list_blocs_crossed = None
+                all_blocks.list_blocs_crossed_dvg = None
+
                 crossed_correlations *= par.type_float(1/Nt)
                 crossed_correlations = 1/2*(crossed_correlations-crossed_correlations.T)
+
+            if par.should_we_penalize_divergence:
+                dvg_correlation = np.block(all_blocks.list_blocs_dvg)
+                dvg_correlation *= par.type_float(1/Nt)
+            del all_blocks
+            gc.collect()
     ############### ==============================================================
     ############### MPI_ALL_REDUCE on meridian planes
     ############### ==============================================================
             if par.size > 1:
                 correlation = par.comm_meridian.reduce(correlation,root=0)
-                if consider_crossed_correlations:
+                if par.should_we_penalize_divergence: #separated from correlation for POD on cos&sin
+                    dvg_correlation = par.comm_meridian.reduce(dvg_correlation,root=0)
+                if consider_crossed_correlations: #already contains dvg correlations
                     crossed_correlations = par.comm_meridian.reduce(crossed_correlations,root=0)
                 write_job_output(par,'Successfully reduced all in Meridian')
     ############### ==============================================================
@@ -93,11 +110,17 @@ def main_extract_latents(par):
                     correlation *= 0
                 if i == 0 and a == par.rank_axis:
                     list_correlations = [np.zeros(correlation.shape, dtype=np.complex128) for _ in par.list_m_families]
+                if par.should_we_penalize_divergence:
+                    total_correlation = correlation + dvg_correlation
+                else:
+                    total_correlation = correlation
+                if axis == 's' and mF == 0:
+                    total_correlation *= 0
 
                 if mF == 0:
-                    list_correlations[index_correlation] += correlation
+                    list_correlations[index_correlation] += total_correlation
                 else:
-                    list_correlations[index_correlation] += par.type_float(1/2)*correlation
+                    list_correlations[index_correlation] += par.type_float(1/2)*total_correlation
                     if consider_crossed_correlations:
                         list_correlations[index_correlation] += 1.j*epsilon_correlations*crossed_correlations
 
@@ -172,7 +195,13 @@ def main_extract_latents(par):
                 sorting_indexes = np.argsort(all_eigvals)[::-1] #sort in decreasing order
                 all_eigvals = all_eigvals[sorting_indexes]
                 all_eigvecs = np.vstack([pod.proj_coeffs for pod in list_pod_a])[sorting_indexes, :]
-                all_symmetries = np.concatenate([pod.symmetries for pod in list_pod_a])[sorting_indexes]
+                print([np.shape(pod.symmetries)] for pod in list_pod_a)
+                print([np.shape(pod.eigvals)] for pod in list_pod_a)
+
+                print(np.shape(all_eigvals))
+                all_symmetries = np.concatenate([pod.symmetries for pod in list_pod_a])
+                print(np.shape(all_symmetries))
+                all_symmetries = all_symmetries[sorting_indexes]
                 full_pod = POD(all_eigvals,all_eigvecs,all_symmetries)
                 save_pod(par,full_pod)
                 write_job_output(par,f'succesfully saved full spectra for symetrized suites (phys POD)')

@@ -18,7 +18,7 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_remove_mean_field',#'should_mean_field_computation_include_mesh_sym',
                 'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format','should_we_do_all_post_tests',
                 'should_we_modify_weights','should_we_penalize_divergence','should_mean_field_be_axisymmetric',
-'read_from_gauss']
+'read_from_gauss', "test_normalization"]
 list_chars = ['mesh_ext','path_to_mesh','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym',
               'bins_format','mesh_type','directory_scalar_for_weights']
@@ -369,6 +369,11 @@ class parameters:
             if not test:
                 read_from_gauss = False
             self.read_from_gauss = read_from_gauss
+#######################################################
+            test, test_normalization = find_string(lines, 'test_normalization')
+            if not test:
+                test_normalization = False
+            self.test_normalization = test_normalization
 
 
 

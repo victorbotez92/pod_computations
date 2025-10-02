@@ -17,7 +17,7 @@ import os,sys
 sys.path.append('/gpfs/users/botezv/.venv')
 from SFEMaNS_env.write_stb import write_fourier, write_phys
 from SFEMaNS_env.FFT_operations import fourier_to_phys
-from SFEMaNS_env.operators import gauss_to_nodes
+from SFEMaNS_env.operators import nodes_to_gauss, gauss_to_nodes
 
 ###############################
 
@@ -103,7 +103,11 @@ def main_extract_modes(data_par):
                 
                 write_job_output(data_par,f'  Importing all of {path_to_data}')
                 for individual_path_to_data in path_to_data:
-                    new_data = import_data(data_par,mF,axis,[individual_path_to_data],data_par.field_name_in_file, rm_mean_field=False) #shape t (d n)
+                    new_data = import_data(data_par,mF,axis,[individual_path_to_data],data_par.field_name_in_file, rm_mean_field=False, include_dvg=False) #shape t (d n)
+                    new_data = rearrange(new_data, 't (d n) -> n d t', d=data_par.D)
+                    new_data = nodes_to_gauss(new_data, data_par)
+                    new_data = rearrange(new_data, "n d t -> t (d n)")
+
                     write_job_output(data_par,f'      Successfully imported {individual_path_to_data}')
                     T_new_data = new_data.shape[0]
                     N_space = new_data.shape[-1]
@@ -123,12 +127,20 @@ def main_extract_modes(data_par):
                             elif data_par.type_sym == 'centro':
                                 sym_tensor = np.array([1, 1, -1])
 
+#                            new_data = rearrange(new_data, "t (d n) -> n d t", d=data_par.D)
+#                            new_data = nodes_to_gauss(new_data, data_par)
+#                            new_data = rearrange(new_data, "n d t -> t d n")
                             new_data = rearrange(new_data, "t (d n) -> t d n", d=data_par.D)
                             sym_data = np.zeros(new_data.shape)
                             sym_coeff = (data_par.type_sym=='centro')*(-1)**mF + (data_par.type_sym=='Rpi')*(-1)**(axis=='s')
                             for d in range(data_par.D):
                                 sym_data[:, d, :] = sym_coeff*sym_tensor[d]*new_data[:, d, data_par.tab_pairs]
-                            
+#                            new_data = rearrange(new_data, "t d n -> n d t")
+#                            new_data = gauss_to_nodes(new_data, data_par, data_par.W)
+#                            new_data = rearrange(new_data, "n d t -> t (d n)")                           
+#                            sym_data = rearrange(sym_data, "t d n -> n d t")
+#                            sym_data = gauss_to_nodes(sym_data, data_par, data_par.W)
+#                            sym_data = rearrange(sym_data, "n d t -> t (d n)")                           
                             new_data = rearrange(new_data, "t d n -> t (d n)")
                             sym_data = rearrange(sym_data, "t d n -> t (d n)")
 
@@ -137,13 +149,29 @@ def main_extract_modes(data_par):
                     if data_par.should_we_save_phys_POD:
 
                         if phys_pod_modes is None:
-                            phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
+                            if not consider_crossed_correlations:
+                                phys_pod_modes = np.zeros((a_phys.shape[0], N_space))
+                            else:
+                                phys_pod_modes = np.zeros((a_phys.shape[0], 2*N_space))
                         if consider_crossed_correlations:
-                            complex_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file, rm_mean_field=False)
+                            complementary_data = import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file, rm_mean_field=False, include_dvg=False)
+                            complementary_data = rearrange(complementary_data, "t (d n) -> n d t",d=data_par.D)
+                            complementary_data = nodes_to_gauss(complementary_data, data_par)
+                            complementary_data = rearrange(complementary_data, "n d t -> t (d n)")
+                            #complex_data = new_data + 1.j*epsilon_correlations*complementary_data
+                            complex_data = new_data - 1.j*epsilon_correlations*complementary_data
+                            #complex_data = new_data + 1.j*epsilon_correlations*import_data(data_par,mF,"s",[individual_path_to_data],data_par.field_name_in_file, rm_mean_field=False)
                             new_data = complex_data
                             del complex_data
                             gc.collect()
-
+                            new_data = rearrange(new_data, "t (d n) -> n d t", d=data_par.D)
+                            dummy = np.empty((new_data.shape[0], 2*data_par.D, new_data.shape[2]), dtype=np.complex128)
+                            dummy[:, ::2, :] = new_data
+                            dummy[:, 1::2, :] = 1.j*epsilon_correlations*new_data
+                            new_data = np.copy(dummy)
+                            del dummy
+                            gc.collect()
+                            new_data = rearrange(new_data, "n d t -> t (d n)")
                         #phys_pod_modes = phys_pod_modes + einsum(1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots], new_data, 'P T, T N -> P N')
                          # fixing latex calculation mistake
                         phys_pod_modes = phys_pod_modes + data_par.number_shifts*einsum(1/(Nt_P*data_par.number_shifts*e_phys[:,None]) * a_phys[:,previous_nb_snapshots:local_nb_snapshots], new_data, 'P T, T N -> P N')
@@ -154,17 +182,28 @@ def main_extract_modes(data_par):
                                     sym_tensor = np.array([1, -1, -1])
                                 elif data_par.type_sym == 'centro':
                                     sym_tensor = np.array([1, 1, -1])
-
+ 
+#                                new_data = rearrange(new_data, "t (d n) -> n d t", d=data_par.D)
+#                                new_data = nodes_to_gauss(new_data, data_par)
+#                                new_data = rearrange(new_data, 'n d t -> t d n')
                                 new_data = rearrange(new_data, "t (d n) -> t d n", d=data_par.D)
                                 sym_data = np.zeros(new_data.shape)
                                 sym_coeff = (data_par.type_sym=='centro')*(-1)**mF + (data_par.type_sym=='Rpi')*(-1)**(axis=='s')
                                 for d in range(data_par.D):
-                                    if not (consider_crossed_correlations and data_par.type_sym=='Rpi'):
-                                        sym_data[:, d, :] = sym_coeff*sym_tensor[d]*new_data[:, d, data_par.tab_pairs]
-                                    else:
-                                        sym_data = sym_data.astype(np.complex128)
-                                        sym_data[:, d, :].real = sym_tensor[d]*new_data[:, d, data_par.tab_pairs].real #no change of sign for cosine (Rpi-sym)
-                                        sym_data[:, d, :].imag = -sym_tensor[d]*new_data[:, d, data_par.tab_pairs].imag #change sign for sine (Rpi-sym)
+#                                    if not (consider_crossed_correlations and data_par.type_sym=='Rpi'):
+#                                        sym_data[:, d, :] = sym_coeff*sym_tensor[d]*new_data[:, d, data_par.tab_pairs]
+#                                    else:
+#                                        sym_data = sym_data.astype(np.complex128)
+#                                        sym_data[:, d, :].real = sym_tensor[d]*new_data[:, d, data_par.tab_pairs].real #no change of sign for cosine (Rpi-sym)
+#                                        sym_data[:, d, :].imag = -sym_tensor[d]*new_data[:, d, data_par.tab_pairs].imag #change sign for sine (Rpi-sym)
+                                    #======== After second thought must not change sign
+                                    sym_data[:, d, :] = sym_coeff*sym_tensor[d]*new_data[:, d, data_par.tab_pairs]
+#                                new_data = rearrange(new_data, "t d n -> n d t")
+#                                new_data = gauss_to_nodes(new_data, data_par, data_par.W)
+#                                new_data = rearrange(new_data, "n d t -> t (d n)")                           
+#                                sym_data = rearrange(sym_data, "t d n -> n d t")
+#                                sym_data = gauss_to_nodes(sym_data, data_par, data_par.W)
+#                                sym_data = rearrange(sym_data, "n d t -> t (d n)")                           
                                 new_data = rearrange(new_data, "t d n -> t (d n)")
                                 sym_data = rearrange(sym_data, "t d n -> t (d n)")
 
@@ -181,32 +220,36 @@ def main_extract_modes(data_par):
                     np.save(data_par.complete_output_path+data_par.output_file_name+f"/fourier_pod_modes/mF_{mF:03d}_nP_{nP:03d}_{axis}",fourier_pod_modes[m_i])
             
             if data_par.should_we_save_phys_POD:
-
+                if consider_crossed_correlations:
+                    phys_pod_modes = rearrange(phys_pod_modes, "P (d N) -> P d N", d=2)
                 for m_i, nP in enumerate(data_par.phys_pod_modes_to_save):
                     # nP=data_par.phys_pod_modes_to_save[m_i]
                     if not consider_crossed_correlations:
                         np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_{axis}",phys_pod_modes[m_i, :])
-
-                    elif m_i%2==0:
-                        to_save = 1/2*phys_pod_modes[m_i//2, :].real
-                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
-                        to_save = 1/2*(-1.j*phys_pod_modes[m_i//2, :]).real
-                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
-#                        to_save = phys_pod_modes[m_i//2, :].real
-#                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
-#                        to_save = (-1.j*phys_pod_modes[m_i//2, :]).real
-#                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
-                    elif m_i%2 == 1:
-                        to_save = 1/2*phys_pod_modes[(m_i-1)//2, :].imag
-                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
-                        to_save = 1/2*(-1.j*phys_pod_modes[(m_i-1)//2, :]).imag
-                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
-#                        to_save = phys_pod_modes[(m_i-1)//2, :].imag
-#                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
-#                        to_save = (-1.j*phys_pod_modes[(m_i-1)//2, :]).imag
-#                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
                     else:
-                        continue
+                        if m_i%2==0:
+                            to_save = 1/2*phys_pod_modes[m_i//2, 0, :].real
+                            np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
+                            #to_save = 1/2*(-1.j*phys_pod_modes[m_i//2, :]).real
+                            to_save = 1/2*(phys_pod_modes[m_i//2, 1, :]).real
+                            np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
+    #                        to_save = phys_pod_modes[m_i//2, :].real
+    #                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
+    #                        to_save = (-1.j*phys_pod_modes[m_i//2, :]).real
+    #                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
+                        elif m_i%2 == 1:
+                            to_save = 1/2*phys_pod_modes[(m_i-1)//2, 0, :].imag
+                            #to_save = 1/2*phys_pod_modes[(m_i-1)//2, :].imag
+                            np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
+                            to_save = 1/2*phys_pod_modes[(m_i-1)//2, 1, :].imag
+                            #to_save = 1/2*(-1.j*phys_pod_modes[(m_i-1)//2, :]).imag
+                            np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
+    #                        to_save = phys_pod_modes[(m_i-1)//2, :].imag
+    #                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_c",to_save)
+    #                        to_save = (-1.j*phys_pod_modes[(m_i-1)//2, :]).imag
+    #                        np.save(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{fourier_family}_nP_{nP:03d}_mF_{mF:03d}_s",to_save)
+                        else:
+                            continue
         # end for axis in [cos,sin]
     # end for mF in MF
 
@@ -222,20 +265,20 @@ def switch_to_bins_format(data_par, sfem_par):
         for i in range(data_par.rank, len(list_m_nP), data_par.size):
             num_m, nP = list_m_nP[i]
             m = data_par.list_m_families[num_m].min()
-            pod_fourier_format = np.zeros((len(data_par.R), 2*data_par.D, data_par.list_modes.max()+1))  #(N a*D MF)
+            pod_fourier_format = np.zeros((len(data_par.W), 2*data_par.D, data_par.list_modes.max()+1))  #(N a*D MF)
             for mF in data_par.list_m_families[num_m]:
                 for a, axis in enumerate(["c", "s"]):
                     if not(mF == 0 and axis == 's'):
                         new_mode = np.load(data_par.complete_output_path+data_par.output_file_name+f"/phys_pod_modes/m_{m}_nP_{nP:03d}_mF_{mF:03d}_{axis}.npy")
                     else:
-                        new_mode = np.zeros(data_par.D*data_par.R.shape[0])
+                        new_mode = np.zeros(data_par.D*data_par.W.shape[0])
                     pod_fourier_format[:, a::2, mF] = rearrange(new_mode, '(d n) -> n d', d=data_par.D)
             
             # normalization_factors = np.sum(pod_fourier_format**2*(W.reshape(W.shape[0], 1, 1)), axis=(0,1))
             # normalization_factors[1: ] /= 2
             # normalization_factors = normalization_factors.sum()
             # pod_fourier_format /= normalization_factors
-            pod_fourier_format = gauss_to_nodes(pod_fourier_format, data_par, W)
+            pod_fourier_format = gauss_to_nodes(pod_fourier_format, data_par)
             if data_par.bins_format == 'fourier':
                 write_fourier(sfem_par,pod_fourier_format,path_out+f"m{m:03d}/",field_name=f'POD_{data_par.field}',I=nP+1,from_gauss=False)
             elif data_par.bins_format == 'phys':
