@@ -166,6 +166,7 @@ False
 
 ===paths_to_data===
 /tfin_0/binaries_out/u/
+4
 
 ===output_path===
 /test_npy/
@@ -198,5 +199,8 @@ True
 ===bins_format=== #either fourier or phys
 fourier
 
-===should_we_do_all_post_tests=== #Tests relations latents <-> spectrum; modes orthonormality; modes projections
+===should_we_do_post_tests=== #Tests relations latents <-> spectrum; modes orthonormality; modes projections
+True
+
+===should_we_do_post_processing===
 True

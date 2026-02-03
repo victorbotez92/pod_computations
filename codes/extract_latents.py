@@ -1,30 +1,20 @@
 #!/usr/bin/env python3
-# import sys
-# import os, array, time
-# import time
 import gc, os
-# import struct
-# from mpi4py import MPI
-
 # from memory_profiler import profile
 
-#sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
-# from einops import rearrange
 import numpy as np
-# from scipy.sparse import csr_matrix
 
 ###############################
 from POD_computation import compute_POD_features, save_pod, POD, update_pod_with_mean_field
 from compute_correlations import core_correlation_matrix_by_blocks
-from basic_functions import write_job_output
+from basic_functions import write_job_output, print_memory_usage
 ###############################
 
 
 
 #@profile
-def main_extract_latents(par):   
+def main_extract_latents(inputs):   
 
-    once_make_cor_for_phys = True
     list_axis = ["c","s"]
 
     # if is_the_field_to_be_renormalized_by_magnetic_energy:
@@ -33,33 +23,38 @@ def main_extract_latents(par):
     #     nb_DR = int(field[3])
     #     magnetic_energies = energies[20*nb_DR+10,:]
 
-    for i,mF in enumerate(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier]):
-        if par.should_we_save_phys_POD:
+    if inputs.should_we_save_phys_POD:
+        list_correlations = None
+        list_crossed_correlations = None
+
+    for i,mF in enumerate(inputs.list_modes[inputs.rank_fourier::inputs.nb_proc_in_fourier]):
+        if inputs.should_we_save_phys_POD:
             bool_found = False
             index_correlation = 0
             while not bool_found:
-                if mF in par.list_m_families[index_correlation]:
+                if mF in inputs.list_m_families[index_correlation]:
                     bool_found = True
                 else:
                     index_correlation += 1
 
-        write_job_output(par,f'entering Fourier loop {i//par.nb_proc_in_fourier+1}/{len(par.list_modes[par.rank_fourier::par.nb_proc_in_fourier])//par.nb_proc_in_fourier}')
-        for a in range(par.rank_axis,2,par.nb_proc_in_axis):
+        write_job_output(inputs,f'entering Fourier loop {i//inputs.nb_proc_in_fourier+1}/{len(inputs.list_modes[inputs.rank_fourier::inputs.nb_proc_in_fourier])//inputs.nb_proc_in_fourier}')
+        print_memory_usage(inputs, tag="Before entering axis loop:")
+
+        for a in range(inputs.rank_axis,2,inputs.nb_proc_in_axis):
             axis = list_axis[a]
-            write_job_output(par,f'doing axis {axis}')
 
     ############### ==============================================================
     ############### Create correlation matrix
     ############### ==============================================================
-            if par.should_we_save_phys_POD and axis == 'c':
-                m = par.list_m_families[index_correlation][0]
-                if m == 0 or (m == par.number_shifts//2 and par.number_shifts%2 == 0):
+            if inputs.should_we_save_phys_POD:
+                m = np.min(inputs.list_m_families[index_correlation])%inputs.number_shifts
+                if m == 0 or (m == inputs.number_shifts//2 and inputs.number_shifts%2 == 0):
                     consider_crossed_correlations = False
                 else:
                     consider_crossed_correlations = True
-                    if (m-mF)%par.number_shifts == 0:
+                    if (m-mF)%inputs.number_shifts == 0:
                         epsilon_correlations = 1
-                    elif (m+mF)%par.number_shifts == 0:
+                    elif (m+mF)%inputs.number_shifts == 0:
                         epsilon_correlations = -1
                     else:
                         raise ValueError(f"Inconsistency in crossed correlations: code found mF={mF} in {m}-family")
@@ -67,141 +62,153 @@ def main_extract_latents(par):
             else:
                 consider_crossed_correlations = False
 
+            print_memory_usage(inputs, tag="Before starting correlation computations:")
+
+            #correlation, crossed_correlations = core_correlation_matrix_by_blocks(inputs,mF,axis,inputs.field_name_in_file,
+            all_blocks, all_blocks_crossed = core_correlation_matrix_by_blocks(inputs,mF,axis,consider_crossed_correlations=consider_crossed_correlations)
             
-            #correlation, crossed_correlations = core_correlation_matrix_by_blocks(par,mF,axis,par.field_name_in_file,
-            all_blocks = core_correlation_matrix_by_blocks(par,mF,axis,par.field_name_in_file,
-                                                        for_building_symmetrized_weights=par.for_building_symmetrized_weights,
-                                                        consider_crossed_correlations=consider_crossed_correlations)
+            if inputs.size > 1:
+                inputs.comm.Barrier()
+                write_job_output(inputs, f"Successfully computed correlation matrices at a={a}, Fourier loop {i//inputs.nb_proc_in_fourier+1}/{len(inputs.list_modes[inputs.rank_fourier::inputs.nb_proc_in_fourier])//inputs.nb_proc_in_fourier}")
+
             correlation = np.block(all_blocks.list_blocs)
             Nt = len(correlation)
-            correlation *= par.type_float(1/Nt)
+            correlation *= inputs.type_float(1/Nt)
             if consider_crossed_correlations:
-                crossed_correlations = np.block(all_blocks.list_blocs_crossed)
-                if par.should_we_penalize_divergence:
-                    crossed_correlations += np.block(all_blocks.list_blocs_crossed_dvg)
-                all_blocks.list_blocs_crossed = None
-                all_blocks.list_blocs_crossed_dvg = None
+                crossed_correlations = np.block(all_blocks_crossed.list_blocs)
 
-                crossed_correlations *= par.type_float(1/Nt)
-                crossed_correlations = 1/2*(crossed_correlations-crossed_correlations.T)
+                crossed_correlations *= inputs.type_float(1/Nt)
 
-            if par.should_we_penalize_divergence:
-                dvg_correlation = np.block(all_blocks.list_blocs_dvg)
-                dvg_correlation *= par.type_float(1/Nt)
-            del all_blocks
+
+            del all_blocks, all_blocks_crossed
             gc.collect()
     ############### ==============================================================
     ############### MPI_ALL_REDUCE on meridian planes
     ############### ==============================================================
-            if par.size > 1:
-                correlation = par.comm_meridian.reduce(correlation,root=0)
-                if par.should_we_penalize_divergence: #separated from correlation for POD on cos&sin
-                    dvg_correlation = par.comm_meridian.reduce(dvg_correlation,root=0)
+            if inputs.size > 1:
+                correlation = inputs.comm_meridian.reduce(correlation,root=0)
+                # if inputs.should_we_penalize_divergence: #separated from correlation for POD on cos&sin
+                #     dvg_correlation = inputs.comm_meridian.reduce(dvg_correlation,root=0)
                 if consider_crossed_correlations: #already contains dvg correlations
-                    crossed_correlations = par.comm_meridian.reduce(crossed_correlations,root=0)
-                write_job_output(par,'Successfully reduced all in Meridian')
+                    crossed_correlations = inputs.comm_meridian.reduce(crossed_correlations,root=0)
+                write_job_output(inputs,'Successfully reduced all in Meridian')
     ############### ==============================================================
     ############### Compute POD of Fourier components
     ############### ==============================================================
 
             
-            if par.should_we_save_phys_POD:
+            if inputs.should_we_save_phys_POD:
                 if axis == 's' and mF == 0:
                     correlation *= 0
-                if i == 0 and a == par.rank_axis:
-                    list_correlations = [np.zeros(correlation.shape, dtype=np.complex128) for _ in par.list_m_families]
-                if par.should_we_penalize_divergence:
-                    total_correlation = correlation + dvg_correlation
-                else:
-                    total_correlation = correlation
+                if list_correlations is None:
+                # if i == 0 and a == inputs.rank_axis:
+                    list_correlations = np.array([np.zeros(correlation.shape) for _ in inputs.list_m_families])
+                if list_crossed_correlations is None:
+                    list_crossed_correlations = np.array([np.zeros(correlation.shape) for _ in inputs.list_m_families])
+                # if inputs.should_we_penalize_divergence:
+                #     total_correlation = correlation + dvg_correlation
+                # else:
+                #     total_correlation = correlation
+                total_correlation = np.copy(correlation)
                 if axis == 's' and mF == 0:
                     total_correlation *= 0
 
                 if mF == 0:
                     list_correlations[index_correlation] += total_correlation
                 else:
-                    list_correlations[index_correlation] += par.type_float(1/2)*total_correlation
+                    list_correlations[index_correlation] += inputs.type_float(1/2)*total_correlation
                     if consider_crossed_correlations:
-                        list_correlations[index_correlation] += 1.j*epsilon_correlations*crossed_correlations
+                        list_crossed_correlations[index_correlation] += -inputs.type_float(1/2)*epsilon_correlations*crossed_correlations
+                        # list_correlations[index_correlation] += -1.j*inputs.type_float(1/2)*epsilon_correlations*crossed_correlations
+                        # np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/crossed_correlation_mF{mF}_{axis}.npy',crossed_correlations)
+                        # np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/crossed_correlation_mF{mF}_{axis}.npy',-1.j*inputs.type_float(1/2)*epsilon_correlations*crossed_correlations)
 
             if axis == 's' and mF == 0:
                 del correlation
                 gc.collect()
                 continue
 
-            if par.should_we_save_Fourier_POD and par.rank_meridian == 0:
+            if inputs.should_we_save_Fourier_POD and inputs.rank_meridian == 0:
         
-                pod_a = compute_POD_features(par,correlation,mF=mF,a=axis)
-                if par.should_we_remove_mean_field:
-                    pod_a = update_pod_with_mean_field(par,pod_a,is_it_phys_pod=False,mF=mF,fourier_type=axis)
-                save_pod(par,pod_a,is_it_phys_pod=False,mF=mF,fourier_type=axis)
+                pod_a = compute_POD_features(inputs,correlation,mF=mF,axis=axis)
+                if inputs.should_we_remove_mean_field:
+                    pod_a = update_pod_with_mean_field(inputs,pod_a,is_it_phys_pod=False,mF=mF,axis=axis)
+                save_pod(inputs,pod_a,is_it_phys_pod=False,mF=mF,axis=axis)
+
+                np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/fourier_correlation_mF{mF}_{axis}.npy',correlation)
+
                 del pod_a
                 del correlation
                 gc.collect()
 
         # End for a,axis in ['c','s']
     # End for mF in range(rank,MF,size)
-    if par.should_we_save_phys_POD and par.rank_meridian == 0: #mpi_all_reduce on meridian already done above
-        list_correlations = np.array(list_correlations)
+
+    if inputs.should_we_save_phys_POD and inputs.rank_meridian == 0: #mpi_all_reduce on meridian already done above
+        # list_correlations = np.asarray(list_correlations)
     ############### ==============================================================
     ############### Compute POD in physical space
     ############### ==============================================================
 
 
             ############### MPI_ALL_REDUCE on axis
-        if par.size > 1:
-            # cumulated_correlation = par.comm_axis.reduce(cumulated_correlation,root=0)
-            list_correlations = par.comm_axis.reduce(list_correlations,root=0)
-            write_job_output(par,'Successfully reduced all in axis')
-        if par.rank_axis == 0:
+        if inputs.size > 1:
+            # cumulated_correlation = inputs.comm_axis.reduce(cumulated_correlation,root=0)
+            list_correlations = inputs.comm_axis.reduce(list_correlations,root=0)
+            # if consider_crossed_correlations:
+                # list_crossed_correlations = inputs.comm_axis.reduce(list_crossed_correlations,root=0)
+            list_crossed_correlations = inputs.comm_axis.reduce(list_crossed_correlations,root=0)
+
+            write_job_output(inputs,'Successfully reduced all in axis')
+        if inputs.rank_axis == 0:
                 ############### MPI_ALL_REDUCE in Fourier
-            if par.size > 1:
-                # cumulated_correlation = par.comm_fourier.reduce(cumulated_correlation,root=0)
-                list_correlations = par.comm_fourier.reduce(list_correlations,root=0)
-                write_job_output(par,'Successfully reduced all in Fourier')
+            if inputs.size > 1:
+                # cumulated_correlation = inputs.comm_fourier.reduce(cumulated_correlation,root=0)
+                list_correlations = inputs.comm_fourier.reduce(list_correlations,root=0)
+                # if consider_crossed_correlations:
+                    # list_crossed_correlations = inputs.comm_fourier.reduce(list_crossed_correlations,root=0)
+                list_crossed_correlations = inputs.comm_fourier.reduce(list_crossed_correlations,root=0)
+
+                write_job_output(inputs,'Successfully reduced all in Fourier')
             
             list_pod_a = []
-            for i,m_family in enumerate(par.list_m_families):
-                m = np.min(m_family)
-                if par.rank_fourier == 0:
-                    if m == 0 or (m == par.number_shifts//2 and par.number_shifts%2 == 0):
+            for i,m_family in enumerate(inputs.list_m_families):
+                m = np.min(m_family)%inputs.number_shifts
+                if inputs.rank_fourier == 0:
+                    if m == 0 or (m == inputs.number_shifts//2 and inputs.number_shifts%2 == 0):
                         consider_crossed_correlations = False
                     else:
                         consider_crossed_correlations = True
-                        if (m-mF)%par.number_shifts == 0:
+                        if (m-mF)%inputs.number_shifts == 0:
                             epsilon_correlations = 1
                         else:
                             epsilon_correlations = -1
 
-                    #pod_a = compute_POD_features(par,1/2*(list_correlations[i]+np.conjugate(list_correlations[i].T)),family=m,consider_crossed_correlations=consider_crossed_correlations)
-                    if consider_crossed_correlations:
-                #first 1/2 => because of 1/4 and other 1/2 above
-                #second 1/2 => because of symmetrization of matrix
-                        pod_a = compute_POD_features(par,1/2*1/2*(list_correlations[i]+np.conjugate(list_correlations[i].T)),family=m,consider_crossed_correlations=consider_crossed_correlations)
-                    else:
-                        pod_a = compute_POD_features(par,list_correlations[i],family=m,consider_crossed_correlations=consider_crossed_correlations)
+                    pod_a = compute_POD_features(inputs,list_correlations[i]+1.j*list_crossed_correlations[i],family=m,consider_crossed_correlations=consider_crossed_correlations)
+
                     list_pod_a.append(pod_a)
-                    if par.should_we_remove_mean_field:
-                        pod_a = update_pod_with_mean_field(par,pod_a,family=m)
-                    save_pod(par,pod_a,family=m)
-                    write_job_output(par,f'succesfully saved spectra for symetrized suites (phys POD) of family {m}')
+                    if inputs.should_we_remove_mean_field:
+                        pod_a = update_pod_with_mean_field(inputs,pod_a,family=m)
+                    save_pod(inputs,pod_a,family=m)
+                    write_job_output(inputs,f'succesfully saved spectra for symetrized suites (phys POD) of family {m}')
+
+                    if inputs.should_we_save_phys_correlation:
+                        np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/phys_correlation_m{m}.npy',list_correlations[i])
+                        if consider_crossed_correlations:
+                            np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/phys_crossed_correlation_m{m}.npy',list_crossed_correlations[i])
 
     ######################################## OPTIONAL SAVINGS
-                    if par.should_we_save_phys_correlation:
-                        np.save(par.complete_output_path+'/'+par.output_file_name+f'/phys_correlation_m{m}.npy',list_correlations[i])
-            if par.rank_fourier == 0:
+                    # if inputs.should_we_save_phys_correlation:
+                        # np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/phys_correlation_m{m}.npy',list_correlations[i])
+            if inputs.rank_fourier == 0:
                 all_eigvals = [pod.eigvals for pod in list_pod_a]
                 all_eigvals = np.concatenate(all_eigvals)
                 sorting_indexes = np.argsort(all_eigvals)[::-1] #sort in decreasing order
                 all_eigvals = all_eigvals[sorting_indexes]
                 all_eigvecs = np.vstack([pod.proj_coeffs for pod in list_pod_a])[sorting_indexes, :]
-                print([np.shape(pod.symmetries)] for pod in list_pod_a)
-                print([np.shape(pod.eigvals)] for pod in list_pod_a)
 
-                print(np.shape(all_eigvals))
                 all_symmetries = np.concatenate([pod.symmetries for pod in list_pod_a])
-                print(np.shape(all_symmetries))
                 all_symmetries = all_symmetries[sorting_indexes]
                 full_pod = POD(all_eigvals,all_eigvecs,all_symmetries)
-                save_pod(par,full_pod)
-                write_job_output(par,f'succesfully saved full spectra for symetrized suites (phys POD)')
+                save_pod(inputs,full_pod)
+                write_job_output(inputs,f'succesfully saved full spectra for symetrized suites (phys POD)')

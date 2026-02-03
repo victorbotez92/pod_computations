@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import gc, os, sys
-sys.path.append("/gpfs/users/botezv/.venv/")
-from SFEMaNS_env.operators import nodes_to_gauss
+import os,sys
+import gc
+
 # from memory_profiler import profile
 
 #sys.path.append("/ccc/cont003/home/limsi/bousquer/einops")
@@ -11,46 +11,75 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from functions_to_get_data import import_mean_field
+from compute_renormalizations import renormalize_and_rm_mean_field
 
+sys.path.append("/gpfs/users/botezv/.venv")
+from SFEMaNS_env.operators import nodes_to_gauss, gauss_to_nodes
 class POD:
     def __init__(self,eigvals,proj_coeffs,symmetries):
         self.eigvals = eigvals
         self.proj_coeffs = proj_coeffs
         self.symmetries = symmetries
 
+def inv_vec(vec):
+    n = len(vec)
+    return np.concatenate((vec[n//2:, :], vec[:n//2, :]))
+
 # @profile
-def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_crossed_correlations=False):
-    eigenvalues,eigenvectors = np.linalg.eigh(correlation)
+def compute_POD_features(inputs,correlation,family=None,mF=None,axis=None,consider_crossed_correlations=False):
+    # artificially choose to add factor 1/sqrt(2) to deal with ||u + i tilde(u)||^2 = 2||u||^2
+    # if consider_crossed_correlations:
+    #     eigenvalues,eigenvectors = np.linalg.eigh(2*correlation)
+    # else:
+    #     eigenvalues,eigenvectors = np.linalg.eigh(correlation)
+    if consider_crossed_correlations:
+        eigenvalues,eigenvectors = np.linalg.eigh(1/2*correlation)
+    else:
+        eigenvalues,eigenvectors = np.linalg.eigh(correlation)
+
+
     eigenvalues, eigenvectors = eigenvalues[::-1], eigenvectors[:, ::-1]
 
-    Nt_float = par.type_float(len(correlation))
+    Nt_float = inputs.type_float(len(correlation))
     Nt_int = len(correlation)
 
     del correlation 
     gc.collect()
 
-    if par.number_shifts>1 and not (family is None):
-        full_eigenvectors = np.empty((par.number_shifts*eigenvalues.shape[0], eigenvalues.shape[0]), dtype=np.complex128)
+    if inputs.number_shifts>1 and not (family is None):
+        full_eigenvectors = np.empty((inputs.number_shifts*eigenvalues.shape[0], eigenvalues.shape[0]), dtype=np.complex128)
         if consider_crossed_correlations:
-            if par.should_we_add_mesh_symmetry:
-                if par.type_sym == 'Rpi': #these calculations artificially create symmetric/antisymmetric latents (Cf overleaf)
-                    sym_vect = (eigenvectors[:Nt_int//2,:] + eigenvectors[Nt_int//2:,:])/2
-                    normalization_sym = np.mean(sym_vect.real/sym_vect.imag,axis=0)
-                    del sym_vect
-                    gc.collect()
-                    anti_vect = (eigenvectors[:Nt_int//2,:] - eigenvectors[Nt_int//2:,:])/2
-                    normalization_anti = np.mean(anti_vect.real/anti_vect.imag,axis=0)
-                    del anti_vect
-                    gc.collect()
-                    
-                    if np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) != 1:
-                        print(f'WARNING IN POD_computation.py {family}-family: not satisfactory separation between antisymmetric and symmetric')
-                    #assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) == 1
-                    eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
-                    eigenvectors /= np.reshape(np.sqrt((np.abs(eigenvectors**2)).sum(0)),(1, Nt_int))   #renormalize eigenvectors
+            if inputs.should_we_add_mesh_symmetry and inputs.type_sym == "Rpi":
+                # if inputs.type_sym == 'Rpi': #these calculations artificially create symmetric/antisymmetric latents (Cf overleaf)
+                # sym_vect = (eigenvectors[:Nt_int//2,:] + eigenvectors[Nt_int//2:,:])/2
+                # normalization_sym = np.mean(sym_vect.real/sym_vect.imag,axis=0)
+                # del sym_vect
+                # gc.collect()
+                # anti_vect = (eigenvectors[:Nt_int//2,:] - eigenvectors[Nt_int//2:,:])/2
+                # normalization_anti = np.mean(anti_vect.real/anti_vect.imag,axis=0)
+                # del anti_vect
+                # gc.collect()
 
-        for m in range(par.number_shifts):
-            full_eigenvectors[m*Nt_int:(m+1)*Nt_int, :] = np.exp(-2*1.j*np.pi*family/par.number_shifts*m)*eigenvectors
+                # if np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) != 1:
+                #     print(f'WARNING IN POD_computation.py {family}-family: not satisfactory separation between antisymmetric and symmetric')
+
+                angle_S = np.angle((eigenvectors+inv_vec(eigenvectors))/2)
+                angle_A = np.angle((eigenvectors-inv_vec(eigenvectors))/2/1.j)
+
+
+                if np.prod(np.mean((angle_S-angle_A)%(np.pi)/np.pi, axis=0)<1e-4) != 1:
+                    print(f'WARNING IN POD_computation.py {family}-family: not satisfactory separation between antisymmetric and symmetric')
+
+                eigenvectors *= np.exp(-1.j*angle_S).mean(axis=0).reshape(1, eigenvectors.shape[1])
+                del angle_S
+                gc.collect()
+
+                #assert np.prod(((normalization_sym+1.j)/(normalization_anti+1.j)).real/((normalization_sym+1.j)/(normalization_anti+1.j)).imag < 1e-4) == 1
+                # eigenvectors /= (normalization_sym+1.j)  #nicely separates sym and antisym
+                eigenvectors /= np.reshape(np.sqrt((np.abs(eigenvectors**2)).sum(0)),(1, Nt_int))   #renormalize eigenvectors
+
+        for m in range(inputs.number_shifts):
+            full_eigenvectors[m*Nt_int:(m+1)*Nt_int, :] = np.exp(-2*1.j*np.pi*family/inputs.number_shifts*m)*eigenvectors
         if consider_crossed_correlations:
             real_part = full_eigenvectors.real
             imag_part = full_eigenvectors.imag
@@ -67,115 +96,113 @@ def compute_POD_features(par,correlation,family=None,mF=None,a=None,consider_cro
     else:
         eigenvectors = eigenvectors.real
         #the following two lines make sure a mean field component will have positive time-evolution
-        new_sign = np.sign(eigenvectors[:eigenvalues.shape[0]//par.number_shifts//4,:].sum(axis=0))
+        new_sign = np.sign(eigenvectors[:eigenvalues.shape[0]//inputs.number_shifts//4,:].sum(axis=0))
         eigenvectors *= new_sign.reshape(1, new_sign.shape[0])
     if eigenvalues.min() < 0:
-        print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {a}")
+        print(f"WARNING: eigenvalues of C_tt have invalid values for {mF} {axis}")
     
     eigenvectors = eigenvectors/np.sqrt(np.sum(np.abs(eigenvectors)**2, axis = 0)).reshape(1, eigenvectors.shape[1])
-    proj_coeffs = (np.sqrt(Nt_float*par.number_shifts*(np.abs(eigenvalues[:,np.newaxis])).T)*eigenvectors).T    #factor number_shifts required because Nt_float is just the raw size of snapshot matrix
+    proj_coeffs = (np.sqrt(Nt_float*inputs.number_shifts*(np.abs(eigenvalues[:,np.newaxis])).T)*eigenvectors).T    #factor number_shifts required because Nt_float is just the raw size of snapshot matrix
     del eigenvectors
     gc.collect()
     symmetries = np.zeros(eigenvalues.shape, dtype=np.complex128)
-    if par.should_we_add_mesh_symmetry:
+    if inputs.should_we_add_mesh_symmetry:
         symmetries += np.sign(np.sum(proj_coeffs[:, :Nt_int//2]*proj_coeffs[:, Nt_int//2:Nt_int],axis=1))
     if not (family is None):
         symmetries += 1.j*family
 
     if not (mF is None):
-        if par.type_sym == "Rpi":
-            if a == 'c':
+        if inputs.type_sym == "Rpi":
+            if axis == 'c':
                 symmetries.real *= 1
-            elif a == 's':
+            elif axis == 's':
                 symmetries.real *= -1
-        elif par.type_sym == 'centro':
+        elif inputs.type_sym == 'centro':
             symmetries.real *= (-1)**mF
         else:
-            raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
+            raise ValueError(f'type_sym must be Rpi or centro, not {inputs.type_sym}')
 
     computed_pod = POD(eigenvalues,proj_coeffs,symmetries)
 
     return computed_pod 
 
         
-def update_pod_with_mean_field(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
+def update_pod_with_mean_field(inputs,pod_field,is_it_phys_pod=True,family=None,mF=None,axis=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
         
     Energies=pod_field.eigvals
     latents=pod_field.proj_coeffs
     symmetries = pod_field.symmetries
 
     if is_it_phys_pod == False:
-        if fourier_type == "c":
-            a = "cos"
-        elif fourier_type == "s":
-            a = "sin"
+#        if fourier_type == "c":
+#            a = "cos"
+#        elif fourier_type == "s":
+#            a = "sin"
             
 #============= INCORPORATING MEAN FIELD TO DATA
-        if par.should_we_remove_mean_field:
-            bool_import_mean_field = (mF == 0 and fourier_type=='c') or ((mF != 0) and (mF%par.number_shifts==0) and (par.should_mean_field_be_axisymmetric == False))
+        if inputs.should_we_remove_mean_field:
+            bool_import_mean_field = (mF == 0 and axis=='c') or ((mF != 0) and (mF%inputs.number_shifts==0) and (inputs.should_mean_field_be_axisymmetric == False))
             if bool_import_mean_field:
-                mean_field = import_mean_field(par, mF, fourier_type)
-                mean_field = rearrange(mean_field, "(d n) -> n d 1", d = par.D)
-                mean_field = nodes_to_gauss(mean_field, par)[:, :, 0]
-                mean_field = rearrange(mean_field, "n d -> (d n)")
-                _, _, WEIGHTS, _ = par.for_building_symmetrized_weights
-    
-                mean_energy = np.sum(mean_field**2*WEIGHTS)
-                Energies = np.concatenate((np.array([mean_energy]), Energies))          
+                #mean_field = np.zeros((1,1,1))
+                mean_field = np.load(f"{inputs.MF_output}/mF{mF}_{axis}.npy")
+                #renormalize_and_rm_mean_field(inputs, mean_field, mF, axis)
+                #mean_field *= -1
+         #       _, _, WEIGHTS, _ = inputs.for_building_symmetrized_weights
+                mean_field = mean_field.reshape(mean_field.shape[0], mean_field.shape[1], 1) 
+                mean_energy = np.sum(nodes_to_gauss(mean_field**2, inputs)*inputs.W.reshape(inputs.W.shape[0], 1, 1))
+                Energies = np.concatenate((np.asarray([mean_energy]), Energies))          
     
                 cst_latent = np.sqrt(mean_energy)*np.ones(latents.shape[1])
                 cst_latent = cst_latent.reshape(1, cst_latent.shape[0])
                 latents = np.vstack((cst_latent, latents))
-   
-
-                symmetries = np.concatenate((np.array([0], dtype=np.complex128), symmetries)) 
-                if par.should_we_add_mesh_symmetry:
-                    if par.type_sym == "Rpi":
-                        if fourier_type == 'c':
+    
+                if inputs.should_we_add_mesh_symmetry:
+                    if inputs.type_sym == "Rpi":
+                        if axis == 'c':
                             sym_mean_field = 1+mF*1.j
-                        elif fourier_type == 's':
+                        elif axis == 's':
                             sym_mean_field = -1-mF*1.j
-                    elif par.type_sym == 'centro':
+                    elif inputs.type_sym == 'centro':
                         sym_mean_field = (-1)**mF*(1+mF*1.j)
                     else:
-                        raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
-                    symmetries[0] = sym_mean_field 
-                    #symmetries = np.concatenate((np.array([sym_mean_field]), symmetries)) 
+                        raise ValueError(f'type_sym must be Rpi or centro, not {inputs.type_sym}')
+                    symmetries = np.concatenate((np.asarray([sym_mean_field]), symmetries)) 
 #============= INCORPORATING MEAN FIELD TO DATA
 
     else:
 
 #============= INCORPORATING MEAN FIELD TO DATA
-        if par.should_we_remove_mean_field:
+        if inputs.should_we_remove_mean_field:
             bool_import_mean_field = (not family is None) and (family == 0)
             if bool_import_mean_field:
                 mean_energy = 0
-                for mF in (par.list_m_families[0]):
-                    for axis in ['c','s']:
-                        if (mF==0 and axis=='s') or (mF!=0 and par.should_mean_field_be_axisymmetric==False):
+                for mF in (inputs.list_m_families[0]):
+                    for axis_import in ['c','s']:
+                        if (mF==0 and axis_import=='s') or (mF!=0 and inputs.should_mean_field_be_axisymmetric==False):
                             continue
-                        mean_field = import_mean_field(par, mF, axis)
-                        mean_field = rearrange(mean_field, "(d n) -> n d 1", d = par.D)
-                        mean_field = nodes_to_gauss(mean_field, par)[:, :, 0]
-                        mean_field = rearrange(mean_field, "n d -> (d n)")
-                        _, _, WEIGHTS, _ = par.for_building_symmetrized_weights
+                        mean_field = np.load(f"{inputs.MF_output}/mF{mF}_{axis_import}.npy")
+                        mean_field = mean_field.reshape(mean_field.shape[0], mean_field.shape[1], 1) 
+                        #mean_field = np.zeros((1, 1, 1))
+                        #renormalize_and_rm_mean_field(par, mean_field, mF, axis)
+                        #mean_field *= -1
+                #        mean_field = import_mean_field(inputs, mF, axis_import)
+              #          _, _, WEIGHTS, _ = inputs.for_building_symmetrized_weights
                         fourier_factor = 1/2*(mF > 0) + 1*(mF == 0)
 
-                        mean_energy += fourier_factor*np.sum(mean_field**2*WEIGHTS)
+                        mean_energy += fourier_factor*np.sum(nodes_to_gauss(mean_field**2, inputs)*inputs.W.reshape(inputs.W.shape[0], 1, 1))
 
                 #Energies = np.concatenate((np.array([mean_energy]), Energies))          
 
-                #cst_latent = np.sqrt(mean_energy)/(par.number_shifts/latents.shape[1])*np.ones(latents.shape[1])
+                #cst_latent = np.sqrt(mean_energy)/(inputs.number_shifts/latents.shape[1])*np.ones(latents.shape[1])
                 #cst_latent = cst_latent.reshape(1, cst_latent.shape[0])
 
                 cst_latent = np.sqrt(mean_energy)*np.ones(latents.shape[1])
                 cst_latent = cst_latent.reshape(1, cst_latent.shape[0])
                 latents = np.vstack((cst_latent, latents))
-                Energies = np.concatenate((np.array([mean_energy]), Energies))          
-                
-                symmetries = np.concatenate((np.array([0], dtype=np.complex128), symmetries))
-                if par.should_we_add_mesh_symmetry:
-                    symmetries = np.concatenate((np.array([1+0.j]), symmetries))
+                Energies = np.concatenate((np.asarray([mean_energy]), Energies))          
+              
+                if inputs.should_we_add_mesh_symmetry:
+                    symmetries = np.concatenate((np.asarray([1+0.j]), symmetries))
 #                print("cst latent is = ", cst_latent.mean(), cst_latent.std())
 #                print("mean_energy is =", mean_energy)
 #                print(1/0) 
@@ -185,92 +212,103 @@ def update_pod_with_mean_field(par,pod_field,is_it_phys_pod=True,family=None,mF=
     pod_field.symmetries=symmetries
     
     if Energies.min() == 0:
-        raise ValueError(f"Energy Error in update_pod_with_mean_field: {pod_field},from_phys={is_it_phys_pod},family={family},mF={mF},fourier_type={fourier_type})")
+        raise ValueError(f"Energy Error in update_pod_with_mean_field: {pod_field},from_phys={is_it_phys_pod},family={family},mF={mF},fourier_type={a})")
     if np.abs(latents[0]).min() == 0:
-        raise ValueError(f"new latent Error in update_pod_with_mean_field: {pod_field},from_phys={is_it_phys_pod},family={family},mF={mF},fourier_type={fourier_type})")
+        raise ValueError(f"new latent Error in update_pod_with_mean_field: {pod_field},from_phys={is_it_phys_pod},family={family},mF={mF},fourier_type={a})")
     #if np.abs(latents).min() == 0:
      #   raise ValueError(f"latent Error in update_pod_with_mean_field: {pod_field},from_phys={is_it_phys_pod},family={family},mF={mF},fourier_type={fourier_type})")
     return pod_field
 
-def save_pod(par,pod_field,is_it_phys_pod=True,family=None,mF=None,fourier_type=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
+def save_pod(inputs,pod_field,is_it_phys_pod=True,family=None,mF=None,axis=None): #matrix is the set of data (necessary when should_we_use_sparse matrices set to True)
         
     Energies=pod_field.eigvals
     latents=pod_field.proj_coeffs
     symmetries = pod_field.symmetries
 
     if is_it_phys_pod == False:
-        if fourier_type == "c":
-            a = "cos"
-        elif fourier_type == "s":
-            a = "sin"
+#        if fourier_type == "c":
+#            a = "cos"
+#        elif fourier_type == "s":
+#            a = "sin"
             
-        if par.should_we_add_mesh_symmetry:
-            if par.type_sym == "Rpi":
-                if a == 'c':
+        if inputs.should_we_add_mesh_symmetry:
+            if inputs.type_sym == "Rpi":
+                if axis == 'c':
                     symmetries.real *= 1
-                elif a == 's':
+                elif axis == 's':
                     symmetries.real *= -1
-            elif par.type_sym == 'centro':
+            elif inputs.type_sym == 'centro':
                 symmetries.real *= (-1)**mF
             else:
-                raise ValueError(f'type_sym must be Rpi or centro, not {par.type_sym}')
-            os.makedirs(par.complete_output_path+"/"+par.output_file_name+f"/symmetry" ,exist_ok=True)
-            np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetry/{a}_mF{mF:03d}.npy",symmetries)
+                raise ValueError(f'type_sym must be Rpi or centro, not {inputs.type_sym}')
+            os.makedirs(inputs.complete_output_path+"/"+inputs.output_file_name+f"/symmetry" ,exist_ok=True)
+            np.save(inputs.complete_output_path+"/"+inputs.output_file_name+f"/symmetry/{axis}_mF{mF:03d}.npy",symmetries)
 
-        os.makedirs(par.complete_output_path+"/"+par.output_file_name+f"/latents" ,exist_ok=True)
-        os.makedirs(par.complete_output_path+"/"+par.output_file_name+f"/energies" ,exist_ok=True)
-        np.save(par.complete_output_path+"/"+par.output_file_name+f"/latents/{a}_mF{mF:03d}",latents)
-        np.save(par.complete_output_path+'/'+par.output_file_name+f'/energies/spectrum_{a}{mF:03d}.npy',Energies)
+        os.makedirs(inputs.complete_output_path+"/"+inputs.output_file_name+f"/latents" ,exist_ok=True)
+        os.makedirs(inputs.complete_output_path+"/"+inputs.output_file_name+f"/energies" ,exist_ok=True)
+        np.save(inputs.complete_output_path+"/"+inputs.output_file_name+f"/latents/{axis}_mF{mF:03d}",latents)
+        np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/energies/spectrum_{axis}{mF:03d}.npy',Energies)
 
     else:
 
-        if par.should_we_add_mesh_symmetry:
+        if inputs.should_we_add_mesh_symmetry:
             if family is None:
-                np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys.npy",symmetries)
+                np.save(inputs.complete_output_path+"/"+inputs.output_file_name+f"/symmetries_phys.npy",symmetries)
             else:
-                np.save(par.complete_output_path+"/"+par.output_file_name+f"/symmetries_phys_m{family}.npy",symmetries)
+                np.save(inputs.complete_output_path+"/"+inputs.output_file_name+f"/symmetries_phys_m{family}.npy",symmetries)
         if family is None:
-            np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time).npy",latents)
-            np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys.npy',Energies)
+            np.save(inputs.complete_output_path+"/"+inputs.output_file_name+f"/a_phys.npy",latents)
+            np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/spectrum_phys.npy',Energies)
         else:
-            np.save(par.complete_output_path+"/"+par.output_file_name+f"/a_phys_(mode_time)_m{family}.npy",latents)
-            np.save(par.complete_output_path+'/'+par.output_file_name+f'/spectrum_phys_m{family}.npy',Energies)
+            np.save(inputs.complete_output_path+"/"+inputs.output_file_name+f"/a_phys_m{family}.npy",latents)
+            np.save(inputs.complete_output_path+'/'+inputs.output_file_name+f'/spectrum_phys_m{family}.npy',Energies)
 
 
 ############ MESH SYMMETRY FUNCTIONS (not working because data too big to be handled by numpy, in practice it is always written explicitly)
 
-def apply_rpi_symmetry(data,D,axis,mF,tab_pairs):
+def apply_3D_mesh_sym(inputs, data):
+    data[:] = data[inputs.tab_pairs, :, :]
+    if inputs.type_sym == 'Rpi': #-1 for sine types
+        data[:, 0::2, :] *= inputs.sym_signs.reshape(1, inputs.D, 1)
+        data[:, 1::2, :] *= -inputs.sym_signs.reshape(1, inputs.D, 1)
+    elif inputs.type_sym == 'centro': #-1 for odd mF
+        data[:, 0::2, :] *= inputs.sym_signs.reshape(1, inputs.D, 1)
+        data[:, 1::2, :] *= inputs.sym_signs.reshape(1, inputs.D, 1)
+        data[:, :, 1::2] *= -1
 
-        data = rearrange(data,"t (d n) -> t d n",d=D)
-        #real_new_data = np.empty(np.shape(newdata))
-        #for d in range(D):
-         #   d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
-        data = data[:,:,tab_pairs]
-        #real_new_data[:,d,:] = d_coeff*newdata[:,d,tab_pairs]
-        for d in range(D):
-            d_coeff = ((d == 0)-1/2)*2
-            data[:,d,:] *= d_coeff
-        if axis == 's':  # factor -1 when performing rpi-sym on sine components
-            data *= -1
-            #real_new_data *= (-1)
-        #real_new_data = rearrange(newdata,"t d n  -> t (d n)")
-        data = rearrange(data,"t d n  -> t (d n)")
-        # return newdata
+def apply_mesh_sym_at_mF(inputs, data, mF):
+    data[:] = data[inputs.tab_pairs, :, :]
+    if inputs.type_sym == 'Rpi': #-1 for sine types
+        data[:, 0::2, :] *= inputs.sym_signs.reshape(1, inputs.D, 1)
+        data[:, 1::2, :] *= -inputs.sym_signs.reshape(1, inputs.D, 1)
+    elif inputs.type_sym == 'centro': #-1 for odd mF
+        data[:, 0::2, :] *= inputs.sym_signs.reshape(1, inputs.D, 1)
+        data[:, 1::2, :] *= inputs.sym_signs.reshape(1, inputs.D, 1)
+        data[:, :, :] *= -1
 
-def apply_centro_symmetry(data,D,axis,mF,tab_pairs):  # THIS IS WRONG BECAUSE IT WILL DEPEND ON THE FOURIER MODE mF
+def apply_mesh_sym(inputs, data, axis, mF):
+    if inputs.type_sym == 'Rpi':
+        apply_rpi_symmetry(inputs, data, axis)
+    elif inputs.type_sym == 'centro':
+        apply_centro_symmetry(inputs, data, mF)
 
-        data = rearrange(data,"t (d n) -> t d n",d=D)
-        #real_new_data = np.empty(np.shape(newdata))
-        #for d in range(D):
-         #   d_coeff = ((d == 0)-1/2)*2 # this coeff has value -1 when d > 1 (so for components theta and z) and 1 when d = 1 (so for component r)
-        data = data[:,:,tab_pairs]
-        #real_new_data[:,d,:] = d_coeff*newdata[:,d,tab_pairs]
-        for d in range(D):
-            d_coeff = ((d == 0)+(d == 1)-1/2)*2
-            data[:,d,:] *= d_coeff
-        if mF%2 == 1:  # factor -1 when performing centro-sym on odd Fourier components
-            data *= -1
-            #real_new_data *= (-1)
-        #real_new_data = rearrange(newdata,"t d n  -> t (d n)")
-        data = rearrange(data,"t d n  -> t (d n)")
-        # return newdata
+
+def apply_rpi_symmetry(inputs, data, axis):
+    data[:] = data[inputs.tab_pairs,:,:]
+    data *= inputs.sym_signs.reshape(1, inputs.D, 1)
+    if axis == 's':
+        data *= -1
+
+def apply_centro_symmetry(inputs, data, mF):  # THIS IS WRONG BECAUSE IT WILL DEPEND ON THE FOURIER MODE mF
+    data[:] = data[inputs.tab_pairs,:,:]
+    data *= inputs.sym_signs.reshape(1, inputs.D, 1)
+    if mF%2 == 1:
+        data *= -1
+
+def coeff_sym_axis(inputs, mF, axis):
+    coeff = 1
+    if inputs.type_sym == 'Rpi' and axis=='s':
+        coeff = -1
+    if inputs.type_sym == 'centro' and mF%2 == 1:
+        coeff = -1
+    return coeff

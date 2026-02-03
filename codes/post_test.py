@@ -166,9 +166,10 @@ def test_cumulated_sum(inputs, sfem_par):
 
                 #energy_difference_matrix = np.zeros((inputs.phys_pod_modes_to_save.shape[0]+1, inputs.list_T.sum()))
                 t1 = 0
-                for j in range(nb_paths):
+                for new_path, new_list_T in zip(inputs.paths_to_data, inputs.list_T_per_individual_path):
+                # for j in range(nb_paths):
 
-                    new_data = import_data(inputs,mF,inputs.paths_to_data[j])[:, a::2, :] # shape n d t
+                    new_data = import_data(inputs,mF,new_path, new_list_T)[:, a::2, :] # shape n d t
                     t2 = t1+new_data.shape[-1]
 
                     result_cut_nP = einsum(nodes_to_gauss(new_data**2, inputs), inputs.W, "N D T, N -> T")
@@ -205,7 +206,7 @@ def test_cumulated_sum(inputs, sfem_par):
                 np.save(path_out+f"energy_difference_{m}.npy",energy_difference_matrix)
 
 
-def test_cumulated_energy(inputs, sfem_par, eps_cum_en=1e-5, eps_mean_latents=1e-9):
+def test_cumulated_energy(inputs, sfem_par, eps_cum_en=1e-5, eps_mean_latents=1e-7):
     path_bins = inputs.complete_output_path+inputs.output_file_name+f"/phys_pod_modes/"
     path_latents = inputs.complete_output_path+inputs.output_file_name
     nb_paths = len(inputs.paths_to_data)
@@ -232,9 +233,11 @@ def test_cumulated_energy(inputs, sfem_par, eps_cum_en=1e-5, eps_mean_latents=1e
                     continue
 
                 t1 = 0
-                for j in range(nb_paths):
+                # for j in range(nb_paths):
+                for new_path, new_list_T in zip(inputs.paths_to_data, inputs.list_T_per_individual_path):
+                    new_data = import_data(inputs,mF,new_path, new_list_T)[:, a::2, :] # shape n d t
 
-                    new_data = import_data(inputs,mF,inputs.paths_to_data[j])[:, a::2, :] # shape n d t
+                    # new_data = import_data(inputs,mF,inputs.paths_to_data[j])[:, a::2, :] # shape n d t
                     t2 = t1+new_data.shape[-1]
                     snapshots_energy = einsum(nodes_to_gauss(new_data**2, inputs), inputs.W, "N D T, N -> T")
                     list_energies[t1:t2] += factor*snapshots_energy

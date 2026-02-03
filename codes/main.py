@@ -1,36 +1,40 @@
 import sys
 from mpi4py import MPI
+import numpy as np
 
 import shutil
 
 
 ########################################################################
 from initialization import init
-from compute_renormalizations import renormalization,build_mean_field
+from compute_renormalizations import renormalization,build_mean_field#, test_normalization
 from extract_latents import main_extract_latents
 from extract_modes import main_extract_modes, switch_to_bins_format
 #from post_test import post_test
 from basic_functions import write_job_output
+
+#from post_test import test_normalization,test_divergence,test_cumulated_sum, test_symmetry,test_cumulated_energy
+from post_test import main_test
 ########################################################################
 
 data_file = sys.argv[1]
-par, sfem_par = init(data_file)
-write_job_output(par,"Initialization done successfully")
+inputs, sfem_inputs = init(data_file)
+write_job_output(inputs,"Initialization done successfully")
 
 ########################################################################
 ########################################################################
 
-#sys.path.append(par.path_SFEMaNS_env)
+#sys.path.append(inputs.path_SFEMaNS_env)
 #from read_write_SFEMaNS.read_stb import get_mesh
 #from mesh.load_mesh import define_mesh
-#from SFEMaNS_object.get_par import SFEMaNS_par
+#from SFEMaNS_object.get_inputs import SFEMaNS_inputs
 
 ########################################################################
 ########################################################################
 # job output writing
 
 
-shutil.copy(data_file, par.complete_output_path+"/"+par.output_file_name)
+shutil.copy(data_file, inputs.complete_output_path+"/"+inputs.output_file_name)
 
 
 ########################################################################
@@ -39,12 +43,12 @@ shutil.copy(data_file, par.complete_output_path+"/"+par.output_file_name)
 ########################################################################
 ########################################################################
 
-if par.renormalize:
-    write_job_output(par,"=========================================================== BEGINNING RENORMALIZATION")
-    renormalization(par,par.mesh_type)
-    if par.size != 1:
-        par.comm.Barrier()
-    write_job_output(par,"=========================================================== FINISHED RENORMALIZATION")
+if inputs.renormalize:
+    write_job_output(inputs,"=========================================================== BEGINNING RENORMALIZATION")
+    renormalization(inputs,inputs.mesh_type)
+    if inputs.size != 1:
+        inputs.comm.Barrier()
+    write_job_output(inputs,"=========================================================== FINISHED RENORMALIZATION")
 
 
 ########################################################################
@@ -53,12 +57,12 @@ if par.renormalize:
 ########################################################################
 ########################################################################
 
-if par.mean_field:
-    write_job_output(par,"=========================================================== BEGINNING COMPUTATION MEAN FIELD")
-    build_mean_field(par, par.mesh_type, par.paths_to_data)
-    if par.size != 1:
-        par.comm.Barrier()
-    write_job_output(par,"=========================================================== FINISHED COMPUTATION MEAN FIELD")
+if inputs.mean_field:
+    write_job_output(inputs,"=========================================================== BEGINNING COMPUTATION MEAN FIELD")
+    build_mean_field(inputs, inputs.mesh_type, inputs.paths_to_data)
+    if inputs.size != 1:
+        inputs.comm.Barrier()
+    write_job_output(inputs,"=========================================================== FINISHED COMPUTATION MEAN FIELD")
 
 
 #######################################################################
@@ -67,33 +71,51 @@ if par.mean_field:
 #######################################################################
 #######################################################################
 
-write_job_output(par, "======= FINISHED SNAPSHOTS PRELIMINARY MANIPULATION =======")
+write_job_output(inputs, "======= FINISHED SNAPSHOTS PRELIMINARY MANIPULATION =======")
 
-if par.should_we_save_phys_POD and par.rank == 0:
-    for m_family in par.list_m_families:
-        m = m_family[0]
-        write_job_output(par,f"{m}-family is {m_family}")
-        if m == 0 or (m == par.number_shifts//2 and par.number_shifts%2 == 0):
-            write_job_output(par,f'      Not considering crossed correlation matrices for {m}-family')
+if inputs.should_we_save_phys_POD and inputs.rank == 0:
+    for m_family in inputs.list_m_families:
+        m = m_family.min()%inputs.number_shifts
+        write_job_output(inputs,f"{m}-family is {m_family}")
+        if m == 0 or (m == inputs.number_shifts//2 and inputs.number_shifts%2 == 0):
+            write_job_output(inputs,f'      Not considering crossed correlation matrices for {m}-family')
         else:
-            write_job_output(par,f'      Considering crossed correlation matrices for {m}-family')
+            write_job_output(inputs,f'      Considering crossed correlation matrices for {m}-family')
 
-write_job_output(par,"The data will be gathered as follows:")
-for individual_path_to_data in par.paths_to_data:
-    write_job_output(par,f'  {individual_path_to_data}')
 
+def list_or_int(elm):
+    if isinstance(elm, int) or isinstance(elm, np.int64):
+        return elm
+    elif isinstance(elm, list) or isinstance(elm, np.ndarray):
+        return len(elm)
+    else:
+        raise TypeError(f"incorrect type for individual_list_T_per_individual_path {type(elm)}")
+ 
+
+write_job_output(inputs,"The data will be gathered as follows:")
+for individual_list_T_per_individual_path,individual_path_to_data in zip(inputs.list_T_per_individual_path, inputs.paths_to_data):
+    write_job_output(inputs,f'path: {individual_path_to_data}')
+    # write_job_output(inputs,f'list_T: {individual_list_T_per_individual_path}')
+    write_job_output(inputs, f"consider snapshots: {[list_or_int(elm) for elm in individual_list_T_per_individual_path]}")# from {individual_list_T_per_individual_path.min()} to {individual_list_T_per_individual_path.max()}")
+
+    # if isinstance(individual_list_T_per_individual_path, int) or isinstance(individual_list_T_per_individual_path, np.int64):
+    #     write_job_output(inputs, f"considering all snapshots")
+    # elif isinstance(individual_list_T_per_individual_path, list) or isinstance(individual_list_T_per_individual_path, np.darray):
+    #     write_job_output(inputs, f"consider snapshots: {[len(elm) for elm in individual_list_T_per_individual_path]}")# from {individual_list_T_per_individual_path.min()} to {individual_list_T_per_individual_path.max()}")
+    # else:
+    #     raise TypeError(f"incorrect type for individual_list_T_per_individual_path {type(individual_list_T_per_individual_path)}")
 ########################################################################
 ########################################################################
 ################# Compute time-dependant coefficients ##################
 ########################################################################
 ########################################################################
 
-if par.should_we_extract_latents:
-    write_job_output(par,"=========================================================== BEGINNING LATENTS EXTRACTION")
-    main_extract_latents(par)
-    if par.size != 1:
-        par.comm.Barrier()
-    write_job_output(par,"=========================================================== FINISHED LATENTS EXTRACTION")
+if inputs.should_we_extract_latents:
+    write_job_output(inputs,"=========================================================== BEGINNING LATENTS EXTRACTION")
+    main_extract_latents(inputs)
+    if inputs.size != 1:
+        inputs.comm.Barrier()
+    write_job_output(inputs,"=========================================================== FINISHED LATENTS EXTRACTION")
 
 
 ########################################################################
@@ -102,23 +124,29 @@ if par.should_we_extract_latents:
 ########################################################################
 ########################################################################
 
-if par.should_we_extract_modes:
-    write_job_output(par,"=========================================================== BEGINNING MODES EXTRACTION")
-    main_extract_modes(par)
-    if par.size != 1:
-        par.comm.Barrier()
-    write_job_output(par,"=========================================================== FINISHED MODES EXTRACTION")
+if inputs.should_we_extract_modes:
+    write_job_output(inputs,"=========================================================== BEGINNING MODES EXTRACTION")
+    main_extract_modes(inputs)
+    if inputs.size != 1:
+        inputs.comm.Barrier()
+    write_job_output(inputs,"=========================================================== FINISHED MODES EXTRACTION")
 
-if par.save_bins_format:
-    if par.size != 1:
-        par.comm.Barrier()
-    write_job_output(par,"=========================================================== BEGINNING SWITCH TO BINS FORMAT")
-    switch_to_bins_format(par, sfem_par)
-    if par.size != 1:
-        par.comm.Barrier()
-    write_job_output(par,"=========================================================== FINISHED SWITCH TO BINS FORMAT")
+if inputs.save_bins_format:
+    if inputs.size != 1:
+        inputs.comm.Barrier()
+    write_job_output(inputs,"=========================================================== BEGINNING SWITCH TO BINS FORMAT")
+    switch_to_bins_format(inputs, sfem_inputs)
+    if inputs.size != 1:
+        inputs.comm.Barrier()
+    write_job_output(inputs,"=========================================================== FINISHED SWITCH TO BINS FORMAT")
 
 
-
-if par.size != 1:
+if inputs.do_post_tests:
+    write_job_output(inputs,"=========================================================== BEGINNING POST PROCESSING TESTS")
+    main_test(inputs, sfem_inputs)
+    if inputs.size != 1:
+        inputs.comm.Barrier()
+    write_job_output(inputs,"=========================================================== FINISHED POST PROCESSING TESTS")
+   
+if inputs.size != 1:
     MPI.Finalize

@@ -16,15 +16,16 @@ list_bools = ['READ_FROM_SUITE','is_the_field_to_be_renormalized_by_magnetic_ene
                 'should_we_add_mesh_symmetry','should_we_combine_with_shifted_data',
                 'should_we_save_all_fourier_pod_modes','should_we_save_all_phys_pod_modes',
                 'should_we_remove_mean_field',#'should_mean_field_computation_include_mesh_sym',
-                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format','should_we_do_all_post_tests',
+                'should_we_restrain_to_symmetric','should_we_restrain_to_antisymmetric','save_bins_format','should_we_do_post_tests','should_we_do_post_processing',
                 'should_we_modify_weights','should_we_penalize_divergence','should_mean_field_be_axisymmetric',
-'read_from_gauss', "test_normalization"]
+'read_from_gauss']
 list_chars = ['mesh_ext','path_to_mesh','field',
               'path_to_suites','name_job_output','output_path','output_file_name','type_sym',
               'bins_format','mesh_type','directory_scalar_for_weights']
 
-list_several_chars = []
-list_several_list_chars = ['paths_to_data']
+list_several_chars = ["paths_to_data"]
+list_several_list_chars = []
+# list_several_list_chars = ['paths_to_data']
 list_fcts = []
 
 
@@ -62,15 +63,31 @@ def find_string(lines, str_test):
                     output = list_new_params
                     # globals()[str_test] = list_new_params
 
-                elif str_test in list_several_list_chars:
-                    list_new_params = []
-                    j = i+1
-                    new_param = lines[j].split('\n')[0]
-                    while len(new_param) > 0:
-                        list_new_params.append(new_param.split(','))
-                        j += 1
-                        new_param = lines[j].split('\n')[0]
-                    output = list_new_params
+                # elif str_test in list_several_list_chars:
+                #     list_new_params = []
+                #     j = i+1
+                #     new_param = lines[j].split('\n')[0]
+                #     while len(new_param) > 0:
+                #         list_new_paths = new_param.split(',')
+                #         j += 1
+                #         new_param = lines[j].split('\n')[0]
+                #         integer = new_param.split(',')[0]
+                #         try:
+                #             integer = int(integer)
+                #             #list_new_params.append(int(integer))
+                #         except ValueError:
+                #             raise ValueError("in paths_to_data ==> forgot to add in how many pieces it should be cut to compute correlations")
+                #         for i in range(integer):
+                #             set_new_paths = []
+                #             for new_path in list_new_paths:
+                #                 set_new_paths.append(new_path+f"<{i}<{integer}")
+                            
+                #             list_new_params.append(set_new_paths)
+
+                #         j += 1
+                #         new_param = lines[j].split('\n')[0]
+                #     output = list_new_params
+
                     # globals()[str_test] = list_new_params
 
                 elif str_test in list_several_ints:
@@ -79,7 +96,7 @@ def find_string(lines, str_test):
                     list_new_params = np.empty(len(new_param),dtype=int)
                     for k,num in enumerate(new_param):
                         list_new_params[k] = int(num)
-                    list_new_params = np.array(list_new_params,dtype=int)
+                    list_new_params = np.asarray(list_new_params,dtype=int)
                     output = list_new_params
                     globals()[str_test] = list_new_params
 
@@ -89,7 +106,7 @@ def find_string(lines, str_test):
                     list_new_params = np.empty(len(new_param),dtype=float)
                     for k,num in enumerate(new_param):
                         list_new_params[k] = float(num)
-                    list_new_params = np.array(list_new_params,dtype=float)
+                    list_new_params = np.asarray(list_new_params,dtype=float)
                     output = list_new_params
                     globals()[str_test] = list_new_params
                     
@@ -360,20 +377,20 @@ class parameters:
                 bins_format = 'fourier'
             self.bins_format = bins_format
 #######################################################
-            test, do_post_tests = find_string(lines, 'should_we_do_all_post_tests')
+            test, do_post_tests = find_string(lines, 'should_we_do_post_tests')
             if not test:
                 do_post_tests = False
             self.do_post_tests = do_post_tests
+#######################################################
+            test, do_post_processing = find_string(lines, 'should_we_do_post_processing')
+            if not test:
+                do_post_processing = False
+            self.do_post_processing = do_post_processing
 #######################################################
             test, read_from_gauss = find_string(lines, 'read_from_gauss')
             if not test:
                 read_from_gauss = False
             self.read_from_gauss = read_from_gauss
-#######################################################
-            test, test_normalization = find_string(lines, 'test_normalization')
-            if not test:
-                test_normalization = False
-            self.test_normalization = test_normalization
 
 
 
